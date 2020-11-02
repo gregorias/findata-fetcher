@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-coverage run --source='fetcher/' --branch -m unittest discover -s fetcher/ -t . && \
-coverage html
+pipenv run coverage run --source='fetcher/' --branch -m unittest discover -s test/ -t . && \
+pipenv run coverage html

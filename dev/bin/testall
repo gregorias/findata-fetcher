@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 
+set -o verbose
 mypy fetcher test && \
-python -m unittest discover -s fetcher/ -t .
+python -m unittest discover -s test/ -t .

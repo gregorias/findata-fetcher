@@ -6,12 +6,13 @@ Usage: python -m fetcher.tool --help
 
 import json
 import logging
-import os
 from os import path
-import re
 from typing import List
+import sys
 
 import click
+
+from . import mbank
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
 
@@ -31,17 +32,28 @@ def pull_mbank(config_file, output_file):
     """Fetch my mbank data into a ledger-like file.
 
     Arguments:
-      output_file The CSV that will contain recent transactions.
+      output_file The JSON file that will contain recent transactions
     """
-    config_dict = json.loads(config_file.read())
-    assert isinstance(config_dict, dict)
+    config = json.loads(config_file.read())
+    assert isinstance(config, dict)
 
-    if config_dict[LOGGING_FILE_CFG_KEY]:
-        logging.basicConfig(filename=config_dict[LOGGING_FILE_CFG_KEY],
-                            level=logging.INFO)
+    if config[LOGGING_FILE_CFG_KEY]:
+        logging.basicConfig(filename=config[LOGGING_FILE_CFG_KEY],
+                            level=logging.DEBUG)
 
-    # cfg = mbank.general_config_to_mbank_config(config_dict)
-    # trs = mbank.pull_mbank_data(cfg)
+    try:
+        transactions = mbank.fetch_raw_mbank_data(
+            extract_mbank_credentials(config))
+    except Exception:
+        logging.exception("Could not fetch Mbank data.")
+        sys.exit(1)
+
+    with open(output_file, 'w'):
+        json.dump(transactions, output_file)
+
+
+def extract_mbank_credentials(config: dict) -> mbank.Credentials:
+    return mbank.Credentials(id=config['mbank_id'], pwd=config['mbank_pwd'])
 
 
 if __name__ == '__main__':
