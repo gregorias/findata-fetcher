@@ -6,8 +6,6 @@ Usage: python -m fetcher.tool --help
 
 import json
 import logging
-from os import path
-from typing import List
 import sys
 
 import click
@@ -27,7 +25,7 @@ def cli():
               default='config.json',
               type=click.File(mode='r'),
               help='The file containing the program\'s config')
-@click.argument('output_file', type=click.File(mode='w', lazy=True))
+@click.argument('output_file', type=click.File(mode='wb', lazy=True))
 def pull_mbank(config_file, output_file):
     """Fetch my mbank data into a ledger-like file.
 
@@ -48,8 +46,7 @@ def pull_mbank(config_file, output_file):
         logging.exception("Could not fetch Mbank data.")
         sys.exit(1)
 
-    with open(output_file, 'w'):
-        json.dump(transactions, output_file)
+    output_file.write(transactions)
 
 
 def extract_mbank_credentials(config: dict) -> mbank.Credentials:

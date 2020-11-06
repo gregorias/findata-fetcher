@@ -3,11 +3,11 @@ url = "https://pypi.python.org/simple"
 verify_ssl = true
 
 [packages]
-"cefpython3" = "==66.0"
+selenium = ">=3.141.0"
 click = "==7.0"
 pandas = "==0.24.*"
 pyuserinput = "*"
-CurrencyConverter = "==0.14.1"
+CurrencyConverter = ">=0.14.1"
 
 [dev-packages]
 bpython = "*"

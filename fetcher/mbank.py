@@ -1,12 +1,12 @@
 """Fetches account data from mBank."""
-import logging
-import os
-import re
-from typing import List, NamedTuple
-
-from cefpython3 import cefpython as cef  # type: ignore
-
-__all__ = ['Credentials', 'fetch_raw_mbank_data']
+from typing import NamedTuple
+import datetime
+from selenium import webdriver  # type: ignore
+from selenium.webdriver.common.by import By  # type: ignore
+from selenium.webdriver.common.keys import Keys  # type: ignore
+from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
+from selenium.webdriver.support import expected_conditions  # type: ignore
+import requests
 
 
 class Credentials(NamedTuple):
@@ -14,159 +14,101 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-MBANK_SPA_JS = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                            'mbankspa.js')
-MBANK_LOGIN_PAGE = 'https://online.mbank.pl/pl/Login'
-TFA_PAGE_PTRN = r'^https://online.mbank.pl/authorization(#/.*)?'
-DESKTOP_PAGE = 'https://online.mbank.pl/pl#Desktop'
+MBANK_LOGIN_PAGE = 'https://online.mbank.pl/pl/Login/history'
 HISTORY_PAGE = 'https://online.mbank.pl/history'
-
-# Here's where the CEF script will save scraped data.
-mbank_data = None
-
-
-class MbankLoginState:
-    def __init__(self, cfg):
-        self.cfg = cfg
-
-    def visit(self, browser, frame):
-        if frame.GetUrl() != MBANK_LOGIN_PAGE:
-            logging.error('Expected page {0} but got {1}'.format(
-                MBANK_LOGIN_PAGE, frame.GetUrl()))
-            return None
-
-        frame.ExecuteJavascript("""
-            try {{
-                document.getElementById("userID").value = "{username}";
-                document.getElementById("pass").value = "{password}";
-                // Simulate a key press to enable the submit button
-                $('#pass').focus().trigger({{type : 'keydown', which : 65}});
-                $('#pass').focus().trigger({{type : 'keypress', which : 65}});
-                $('#pass').focus().trigger({{type : 'keyup', which : 65}});
-                document.getElementById("submitButton").click();
-            }} catch (e) {{
-                closeBrowser('Could not login. ' + e.message);
-            }}""".format(username=self.cfg.id, password=self.cfg.pwd))
-        return MbankDesktopState()
+FETCH_PAGE = (
+    'https://online.mbank.pl/pl/Pfm/HistoryApi/GetPfmTransactionsSummary')
 
 
-class MbankDesktopState:
-    def visit(self, browser, frame):
-        logging.debug('MbankDesktopState is visiting {0}'.format(
-            frame.GetUrl()))
-        ASPX_PAGE = 'https://online.mbank.pl/csite/top.aspx'
-        if frame.GetUrl() == ASPX_PAGE:
-            # This should be an auto-redirect page.
-            return self
-        elif re.match(TFA_PAGE_PTRN, frame.GetUrl()):
-            # This should be a second factor authentication page
-            return self
-        elif frame.GetUrl() == DESKTOP_PAGE:
-            # Desktop page is the start page but we want to go to transaction
-            # history page.
-            browser.Navigate(HISTORY_PAGE)
-            return self
-        elif frame.GetUrl() == HISTORY_PAGE:
-            load_new_javascript(browser)
-            return self
-        else:
-            return self
+def format_date(date: datetime.date) -> str:
+    """Formats a date for Mbank's download request"""
+    return date.strftime("%Y-%m-%dT00:00:00.000Z")
 
 
-class LoadHandler:
-    """A state machine-crawler that traverses the site."""
-    def __init__(self, state):
-        self.state = state
-
-    def OnLoadEnd(self, browser, frame, http_code):
-        logging.debug('LoadHandler({0})'.format(frame.GetUrl()))
-        try:
-            # For some reason going to the logout page gives http_code 0
-            if http_code // 100 not in [0, 2]:
-                logging.error(
-                    ('Could not load a new page successfully: {0} {1}').format(
-                        browser.GetUrl(), http_code))
-                browser.TryCloseBrowser()
-                return
-
-            next_state = self.state.visit(browser, frame)
-            if not next_state:
-                logging.debug('LoadHandler has reached an end state.')
-                browser.TryCloseBrowser()
-                return
-            self.state = next_state
-        except Exception as e:
-            logging.error('Caught {0} in LoadHandler.OnLoadEnd'.format(e))
-            browser.TryCloseBrowser()
-
-
-# Browser bindings. They get assigned to a window object, so they do not
-# disappear on page changes.
-def js_log(msg):
-    logging.debug('JS.jsLog: {0}'.format(msg))
-
-
-def set_result(result):
-    global mbank_data
-    mbank_data = result
-    return True
+def download_request_json_payload(from_date: datetime.date,
+                                  to_date: datetime.date) -> dict:
+    """Generates a payload for Mbank's download request"""
+    return {
+        "saveFileType": "CSV",
+        "pfmFilters": {
+            "productIds": "399116",
+            "amountFrom": None,
+            "amountTo": None,
+            "useAbsoluteSearch": False,
+            "currency": "",
+            "categories": "",
+            "operationTypes": "",
+            "searchText": "",
+            "dateFrom": format_date(from_date),
+            "dateTo": format_date(to_date),
+            "standingOrderId": "",
+            "showDebitTransactionTypes": False,
+            "showCreditTransactionTypes": False,
+            "showIrrelevantTransactions": True,
+            "showSavingsAndInvestments": True,
+            "saveShowIrrelevantTransactions": False,
+            "saveShowSavingsAndInvestments": False,
+            "selectedSuggestionId": "",
+            "selectedSuggestionType": "",
+            "showUncategorizedTransactions": False,
+            "debitCardNumber": "",
+            "showBalance": True,
+            "counterpartyAccountNumbers": "",
+            "sortingOrder": "ByDate",
+            "tags": []
+        }
+    }
 
 
-def load_new_javascript(browser):
-    with open(MBANK_SPA_JS, 'r') as js:
-        browser.GetFocusedFrame().ExecuteJavascript(js.read())
+def driver_cookie_jar_to_requests_cookies(driver_cookies: dict) -> dict:
+    return {c['name']: c['value'] for c in driver_cookies}
 
 
-def fetch_mbank_data_internal(creds: Credentials) -> List[List[str]]:
-    """Runs a CEF browser to fetch data from mBank.
+def transform_and_strip_mbanks_csv(raw_csv: bytes) -> bytes:
+    raw_csv = raw_csv[raw_csv.find(b'#Data'):]
+    csv = raw_csv.decode('cp1250')
+    csv = csv.replace('\r\n', '\n')
+    # Remove two newlines at the end
+    csv = csv[:-2]
+    return csv.encode('utf-8')
+
+
+def login_to_mbank(creds: Credentials,
+                   driver: webdriver.remote.webdriver.WebDriver) -> None:
+    driver.get(MBANK_LOGIN_PAGE)
+    driver.find_element(By.ID, "userID").send_keys(creds.id + Keys.TAB)
+    driver.find_element(By.ID, "pass").send_keys(creds.pwd + Keys.RETURN)
+    wait = WebDriverWait(driver, 30)
+    wait.until(
+        expected_conditions.element_to_be_clickable(
+            (By.CSS_SELECTOR,
+             '[data-test-id="SCA:UnknownDevice:OneTimeAccess"]'))).click()
+    wait = WebDriverWait(driver, 30)
+    wait.until(expected_conditions.url_matches(HISTORY_PAGE))
+
+
+def fetch_all_transactions_since_2018(
+        driver: webdriver.remote.webdriver.WebDriver) -> bytes:
+    from_date = datetime.date(2018, 1, 1)
+    to_date = datetime.date.today()
+    resp = requests.post(
+        FETCH_PAGE,
+        json=download_request_json_payload(from_date, to_date),
+        cookies=driver_cookie_jar_to_requests_cookies(driver.get_cookies()))
+    if not resp.ok:
+        raise Exception(
+            "The CSV fetch request has failed. Response reason: {0}".format(
+                resp.reason))
+    return resp.content
+
+
+def fetch_raw_mbank_data(creds: Credentials) -> bytes:
+    """Fetches Mbank's transaction data using Selenium
 
     Returns:
-        An array of arrays. Each atomic array consists of 4 strings:
-        [date, title, tr amount, end saldo].
+        A CSV UTF-8 encoded string with the fetched transactions.
     """
-    BROWSER_RECT = [100, 100, 100 + 1024, 100 + 768]
-
-    wi = cef.WindowInfo()
-    wi.SetAsChild(0, windowRect=BROWSER_RECT)
-    browser = cef.CreateBrowserSync(window_info=wi,
-                                    url=MBANK_LOGIN_PAGE,
-                                    window_title='Browser')
-    lh = LoadHandler(MbankLoginState(creds))
-    browser.SetClientHandler(lh)
-    jb = cef.JavascriptBindings()
-
-    jb.SetFunction('setResult', set_result)
-    jb.SetFunction('jsLog', js_log)
-    jb.SetFunction('loadNew', lambda: load_new_javascript(browser))
-    browser.SetJavascriptBindings(jb)
-
-    logging.debug('Starting the CEF message loop.')
-    cef.MessageLoop()
-
-    if not mbank_data:
-        raise Exception('The javascript has not returned a result.')
-    if isinstance(mbank_data, str):
-        logging.error('Could not scrape the data. {0}'.format(mbank_data))
-        raise Exception(mbank_data)
-    return mbank_data
-
-
-def fetch_raw_mbank_data(creds: Credentials) -> List[List[str]]:
-    """Runs CEF to fetch raw data from mBank.
-
-    Returns:
-        A list of transaction record. Each record consists of 4 strings:
-
-        * date,
-        * title,
-        * transaction amount,
-        * end saldo.
-
-        The list is provided in the order they appear on the Mbank page.
-    """
-    cef.Initialize()
-    try:
-        return fetch_mbank_data_internal(creds)
-    finally:
-        logging.debug('Shutting down CEF.')
-        cef.Shutdown()
+    with webdriver.Firefox() as driver:
+        login_to_mbank(creds, driver)
+        csv = fetch_all_transactions_since_2018(driver)
+        return transform_and_strip_mbanks_csv(csv)
