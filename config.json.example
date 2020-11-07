@@ -5,6 +5,12 @@
 
   "logging_file": "ledupt.log",
 
+  "bcge_id": "AB123123",
+  "bcge_pwd": "hunter2",
+
+  "bcgecc_id": "email@gmail.com",
+  "bcgecc_pwd": "hunter2",
+
   "mbank_id": "12345678",
   "mbank_pwd": "hunter2",
 

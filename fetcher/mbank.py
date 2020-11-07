@@ -1,4 +1,4 @@
-"""Fetches account data from mBank."""
+"""Fetches account data from mBank"""
 from typing import NamedTuple
 import datetime
 from selenium import webdriver  # type: ignore
@@ -102,7 +102,7 @@ def fetch_all_transactions_since_2018(
     return resp.content
 
 
-def fetch_raw_mbank_data(creds: Credentials) -> bytes:
+def fetch_mbank_data(creds: Credentials) -> bytes:
     """Fetches Mbank's transaction data using Selenium
 
     Returns:
