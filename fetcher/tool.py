@@ -57,11 +57,11 @@ def pull_bcge(config: dict) -> bytes:
 @wrap_puller
 def pull_mbank(config: dict) -> bytes:
     """Fetch my Mbank data into a CSV file."""
-    return mbank.fetch_raw_mbank_data(extract_mbank_credentials(config))
+    return mbank.fetch_mbank_data(extract_mbank_credentials(config))
 
 
 def extract_bcge_credentials(config: dict) -> bcge.Credentials:
-    return mbank.Credentials(id=config['bcge_id'], pwd=config['bcge_pwd'])
+    return bcge.Credentials(id=config['bcge_id'], pwd=config['bcge_pwd'])
 
 
 def extract_mbank_credentials(config: dict) -> mbank.Credentials:
