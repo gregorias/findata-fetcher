@@ -2,7 +2,6 @@
 from typing import NamedTuple
 import datetime
 import json
-import time
 from selenium import webdriver  # type: ignore
 from selenium.webdriver.common.by import By  # type: ignore
 from selenium.webdriver.common.keys import Keys  # type: ignore
