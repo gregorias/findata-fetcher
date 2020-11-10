@@ -9,6 +9,8 @@ from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
 from selenium.webdriver.support import expected_conditions  # type: ignore
 import requests
 
+from .driverutils import format_date, driver_cookie_jar_to_requests_cookies
+
 
 class Credentials(NamedTuple):
     id: str
@@ -56,11 +58,6 @@ def get_account_id(driver: webdriver.remote.webdriver.WebDriver) -> str:
     return params['accountId']
 
 
-def format_date(date: datetime.date) -> str:
-    """Formats a date for Mbank's download request"""
-    return date.strftime("%Y-%m-%dT00:00:00.000Z")
-
-
 def download_url_request_json_payload(account_id: str,
                                       from_date: datetime.date,
                                       to_date: datetime.date) -> dict:
@@ -70,10 +67,6 @@ def download_url_request_json_payload(account_id: str,
         "to": format_date(to_date),
         "format": "CSV"
     }
-
-
-def driver_cookie_jar_to_requests_cookies(driver_cookies: dict) -> dict:
-    return {c['name']: c['value'] for c in driver_cookies}
 
 
 def fetch_download_url(driver: webdriver.remote.webdriver.WebDriver,

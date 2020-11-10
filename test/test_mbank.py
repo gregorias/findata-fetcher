@@ -7,10 +7,6 @@ from fetcher import mbank
 
 
 class MbankTestCase(unittest.TestCase):
-    def test_formats_date(self):
-        self.assertEqual(mbank.format_date(datetime.date(2020, 1, 6)),
-                         "2020-01-06T00:00:00.000Z")
-
     def test_gives_download_payload(self):
         from_date = datetime.date(2020, 11, 5)
         to_date = datetime.date(2020, 11, 6)
@@ -47,13 +43,6 @@ class MbankTestCase(unittest.TestCase):
         self.assertEqual(
             mbank.download_request_json_payload(from_date, to_date),
             expected_payload)
-
-    def test_transforms_cookie_jars(self):
-        self.assertEqual(
-            mbank.driver_cookie_jar_to_requests_cookies([{
-                'name': 'HOST',
-                'value': 'example.com'
-            }]), {'HOST': 'example.com'})
 
     def test_preprocesses_mbanks_csv(self):
         raw_csv = (

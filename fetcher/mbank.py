@@ -8,6 +8,8 @@ from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
 from selenium.webdriver.support import expected_conditions  # type: ignore
 import requests
 
+from .driverutils import format_date, driver_cookie_jar_to_requests_cookies
+
 
 class Credentials(NamedTuple):
     id: str
@@ -18,11 +20,6 @@ MBANK_LOGIN_PAGE = 'https://online.mbank.pl/pl/Login/history'
 HISTORY_PAGE = 'https://online.mbank.pl/history'
 FETCH_PAGE = (
     'https://online.mbank.pl/pl/Pfm/HistoryApi/GetPfmTransactionsSummary')
-
-
-def format_date(date: datetime.date) -> str:
-    """Formats a date for Mbank's download request"""
-    return date.strftime("%Y-%m-%dT00:00:00.000Z")
 
 
 def download_request_json_payload(from_date: datetime.date,
@@ -58,10 +55,6 @@ def download_request_json_payload(from_date: datetime.date,
             "tags": []
         }
     }
-
-
-def driver_cookie_jar_to_requests_cookies(driver_cookies: dict) -> dict:
-    return {c['name']: c['value'] for c in driver_cookies}
 
 
 def transform_and_strip_mbanks_csv(raw_csv: bytes) -> bytes:
