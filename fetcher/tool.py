@@ -12,6 +12,7 @@ import click
 
 from . import bcge
 from . import bcgecc
+from . import ib
 from . import mbank
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
@@ -62,6 +63,12 @@ def pull_bcgecc(config: dict) -> bytes:
 
 
 @wrap_puller
+def pull_ib(config: dict) -> bytes:
+    """Fetches Interactive Brokers into a CSV file."""
+    return ib.fetch_data(extract_ib_credentials(config))
+
+
+@wrap_puller
 def pull_mbank(config: dict) -> bytes:
     """Fetches Mbank data into a CSV file."""
     return mbank.fetch_mbank_data(extract_mbank_credentials(config))
@@ -73,6 +80,10 @@ def extract_bcge_credentials(config: dict) -> bcge.Credentials:
 
 def extract_bcgecc_credentials(config: dict) -> bcgecc.Credentials:
     return bcgecc.Credentials(id=config['bcgecc_id'], pwd=config['bcgecc_pwd'])
+
+
+def extract_ib_credentials(config: dict) -> ib.Credentials:
+    return ib.Credentials(id=config['ib_id'], pwd=config['ib_pwd'])
 
 
 def extract_mbank_credentials(config: dict) -> mbank.Credentials:
