@@ -11,6 +11,7 @@ import logging
 import click
 
 from . import bcge
+from . import bcgecc
 from . import mbank
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
@@ -50,18 +51,28 @@ def wrap_puller(f):
 
 @wrap_puller
 def pull_bcge(config: dict) -> bytes:
-    """Fetch my BCGE data into a CSV file."""
+    """Fetches BCGE data into a CSV file."""
+    return bcgecc.fetch_data(extract_bcgecc_credentials(config))
+
+
+@wrap_puller
+def pull_bcgecc(config: dict) -> bytes:
+    """Fetches BCGE CC data into a CSV file."""
     return bcge.fetch_bcge_data(extract_bcge_credentials(config))
 
 
 @wrap_puller
 def pull_mbank(config: dict) -> bytes:
-    """Fetch my Mbank data into a CSV file."""
+    """Fetches Mbank data into a CSV file."""
     return mbank.fetch_mbank_data(extract_mbank_credentials(config))
 
 
 def extract_bcge_credentials(config: dict) -> bcge.Credentials:
     return bcge.Credentials(id=config['bcge_id'], pwd=config['bcge_pwd'])
+
+
+def extract_bcgecc_credentials(config: dict) -> bcgecc.Credentials:
+    return bcgecc.Credentials(id=config['bcgecc_id'], pwd=config['bcgecc_pwd'])
 
 
 def extract_mbank_credentials(config: dict) -> mbank.Credentials:
