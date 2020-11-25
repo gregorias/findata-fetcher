@@ -25,7 +25,7 @@ LOGGING_FILE_CFG_KEY = 'logging_file'
               help='The file containing the program\'s config')
 @click.pass_context
 def cli(ctx, config_file):
-    config = json.loads(config_file.read())
+    config = json.loads(config_file)
     assert isinstance(config, dict)
 
     if config[LOGGING_FILE_CFG_KEY]:

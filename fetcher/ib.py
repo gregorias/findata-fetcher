@@ -14,23 +14,22 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-LOGIN_PAGE = 'https://TODO'
+LOGIN_PAGE = 'https://www.interactivebrokers.co.uk/sso/Login?RL=1'
 
 
 def login(creds: Credentials,
           driver: webdriver.remote.webdriver.WebDriver) -> None:
-    username_field_name = 'Benutzername'
     driver.get(LOGIN_PAGE)
-    wait = WebDriverWait(driver, 30)
-    wait.until(
-        expected_conditions.presence_of_element_located(
-            (By.ID, username_field_name)))
-    pass
+    driver.find_element(By.ID, "user_name").send_keys(creds.id + Keys.TAB)
+    driver.find_element(By.ID, "password").send_keys(creds.pwd + Keys.RETURN)
 
 
 def fetch_all_transactions_since_2018(
         driver: webdriver.remote.webdriver.WebDriver) -> bytes:
-    # TODO
+    driver.find_element(By.CSS_SELECTOR, '[aria-label="Berichte"]').click()
+    mtm_overview_box = driver.find_element_by_xpath(
+        "//*[normalize-space(text()) = 'MTM-Übersicht']/../../..")
+    mtm_overview_box.find_element(By.CSS_SELECTOR, '.fa-arrow-circle-right')
     return b''
 
 
@@ -41,6 +40,7 @@ def fetch_data(creds: Credentials) -> bytes:
         A CSV UTF-8 encoded string with the fetched transactions.
     """
     with webdriver.Firefox() as driver:
+        driver.implicitly_wait(10)
         login(creds, driver)
         csv = fetch_all_transactions_since_2018(driver)
         return csv

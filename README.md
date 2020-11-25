@@ -4,11 +4,13 @@ A scraper of personal financial data from websites.
 
 UNDER DEVELOPMENT
 
-This tool scrapes relevant financial data from diverse websites, e.g., Interactive Brokers, Degiro, UBS, into a JSON-file.
+This tool scrapes relevant financial data from diverse websites, e.g.,
+Interactive Brokers, Degiro, UBS, into a CSV-files.
 
 ## Installation
 
-1. [Install Selenium Webdriver (geckodriver)](https://www.selenium.dev/documentation/en/selenium_installation/installing_webdriver_binaries/)
+1. [Install Selenium Webdriver
+   (geckodriver)](https://www.selenium.dev/documentation/en/selenium_installation/installing_webdriver_binaries/)
 2. Run
 
     $ pip install --editable .
@@ -34,4 +36,4 @@ Also install [direnv](https://direnv.net/) to benefit from some dev tools.
 
 In order to run tests, use `testall`.
 
-In order to run tests and check for coverage use `coverage`.
+In order to run tests and check for coverage, use `coverage`.

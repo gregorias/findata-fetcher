@@ -1,8 +1,4 @@
 {
-  "fetch_reports": true,
-  "ubs_id": "12345678",
-  "download_target_dir": "/home/username/Downloads",
-
   "logging_file": "ledupt.log",
 
   "bcge_id": "AB123123",
@@ -10,6 +6,9 @@
 
   "bcgecc_id": "email@gmail.com",
   "bcgecc_pwd": "hunter2",
+
+  "ib_id": "abc123",
+  "ib_pwd": "hunter2",
 
   "mbank_id": "12345678",
   "mbank_pwd": "hunter2",
