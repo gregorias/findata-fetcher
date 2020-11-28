@@ -5,8 +5,8 @@ import json
 from selenium import webdriver  # type: ignore
 from selenium.webdriver.common.by import By  # type: ignore
 from selenium.webdriver.common.keys import Keys  # type: ignore
-from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
 from selenium.webdriver.support import expected_conditions  # type: ignore
+from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
 import requests
 
 from .driverutils import format_date, driver_cookie_jar_to_requests_cookies
@@ -17,19 +17,15 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-LOGIN_PAGE = 'https://www.bcge.ch/authen/login?lang=de'
-MAIN_PAGE = 'https://www.bcge.ch/portal/netbanking'
-
-
-def login_to_bcge(creds: Credentials,
-                  driver: webdriver.remote.webdriver.WebDriver) -> None:
+def login(creds: Credentials,
+          driver: webdriver.remote.webdriver.WebDriver) -> None:
+    LOGIN_PAGE = 'https://www.bcge.ch/authen/login?lang=de'
     driver.get(LOGIN_PAGE)
     wait = WebDriverWait(driver, 30)
     wait.until(
         expected_conditions.presence_of_element_located((By.ID, 'username')))
     driver.find_element(By.ID, "username").send_keys(creds.id + Keys.TAB)
     driver.find_element(By.ID, "password").send_keys(creds.pwd + Keys.RETURN)
-    wait.until(expected_conditions.url_matches(MAIN_PAGE))
 
 
 def get_account_id(driver: webdriver.remote.webdriver.WebDriver) -> str:
@@ -103,8 +99,16 @@ def fetch_account_statement_csv(driver: webdriver.remote.webdriver.WebDriver,
     return response.content
 
 
+def wait_for_logged_in_state(
+        driver: webdriver.remote.webdriver.WebDriver) -> None:
+    MAIN_PAGE = 'https://www.bcge.ch/portal/netbanking'
+    wait = WebDriverWait(driver, 60)
+    wait.until(expected_conditions.url_matches(MAIN_PAGE))
+
+
 def fetch_all_transactions_since_2018(
         driver: webdriver.remote.webdriver.WebDriver) -> bytes:
+    wait_for_logged_in_state(driver)
     account_id = get_account_id(driver)
     download_url = fetch_download_url(driver, account_id)
     account_statement_raw = fetch_account_statement_csv(driver, download_url)
@@ -118,6 +122,6 @@ def fetch_bcge_data(creds: Credentials) -> bytes:
         A CSV UTF-8 encoded string with the fetched transactions.
     """
     with webdriver.Firefox() as driver:
-        login_to_bcge(creds, driver)
+        login(creds, driver)
         csv = fetch_all_transactions_since_2018(driver)
         return csv
