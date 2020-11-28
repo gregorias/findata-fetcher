@@ -28,10 +28,14 @@ def cli(ctx, config_file):
     config = json.load(config_file)
     assert isinstance(config, dict)
 
+    ctx.obj['config'] = config
+
     if config[LOGGING_FILE_CFG_KEY]:
         logging.basicConfig(filename=config[LOGGING_FILE_CFG_KEY],
                             level=logging.DEBUG)
-    ctx.obj['config'] = config
+    stderr = logging.StreamHandler()
+    stderr.setLevel(logging.WARNING)
+    logging.getLogger('').addHandler(stderr)
 
 
 def wrap_puller(f):
@@ -53,13 +57,13 @@ def wrap_puller(f):
 @wrap_puller
 def pull_bcge(config: dict) -> bytes:
     """Fetches BCGE data into a CSV file."""
-    return bcgecc.fetch_data(extract_bcgecc_credentials(config))
+    return bcge.fetch_bcge_data(extract_bcge_credentials(config))
 
 
 @wrap_puller
 def pull_bcgecc(config: dict) -> bytes:
     """Fetches BCGE CC data into a CSV file."""
-    return bcge.fetch_bcge_data(extract_bcge_credentials(config))
+    return bcgecc.fetch_data(extract_bcgecc_credentials(config))
 
 
 @wrap_puller
