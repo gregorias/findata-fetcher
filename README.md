@@ -1,11 +1,12 @@
 # findata-fetcher
 
-A scraper of personal financial data from websites.
+This project is a collection of scripts that automate fetching or scraping
+financial data from financial institutions' websites, e.g., Interactive
+Brokers, BCGE.
 
-UNDER DEVELOPMENT
-
-This tool scrapes relevant financial data from diverse websites, e.g.,
-Interactive Brokers, Degiro, UBS, into a CSV-files.
+You can use the fetched data to process it into a different database, e.g.,
+[hledupt](https://github.com/gregorias/hledupt) uses this data to produce
+plaintext accounting files.
 
 ## Installation
 
@@ -18,7 +19,7 @@ Interactive Brokers, Degiro, UBS, into a CSV-files.
 ## Usage example
 
     $ pipenv shell # If not already using pipenv
-    $ python -m fetcher.tool output.json
+    $ python -m fetcher.tool --help
 
 ## Development notes
 
@@ -34,6 +35,6 @@ Also install [direnv](https://direnv.net/) to benefit from some dev tools.
 
 ### Testing
 
-In order to run tests, use `testall`.
+To run tests, use `testall`.
 
-In order to run tests and check for coverage, use `coverage`.
+To run tests and check for coverage, use `coverage`.
