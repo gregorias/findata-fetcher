@@ -38,14 +38,14 @@ def cli(ctx, config_file):
     logging.getLogger('').addHandler(stderr)
 
 
-def wrap_puller(f):
+def wrap_puller(fun):
     @cli.command()
     @click.argument('output_file', type=click.File(mode='wb', lazy=True))
     @click.pass_context
-    @functools.wraps(f)
+    @functools.wraps(fun)
     def pull_xxx(ctx, output_file):
         try:
-            raw_data = f(ctx.obj['config'])
+            raw_data = fun(ctx.obj['config'])
         except Exception:
             logging.exception("Could not fetch data.")
         else:
