@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Fetches account statement data from Interactive Brokers"""
 import base64
+import datetime
 import json
 import logging
 from typing import Dict, NamedTuple
@@ -37,10 +38,26 @@ def wait_for_logged_in_state(
 
 
 def go_to_reports_page(driver: webdriver.remote.webdriver.WebDriver) -> None:
-    driver.find_element(By.CSS_SELECTOR, '[aria-label="Reports"]').click()
+    reports = driver.find_element(By.CSS_SELECTOR, '[aria-label="Reports"]')
+    # Clicking reports too quickly tends to hang up the website.
+    import time
+    time.sleep(1)
+    reports.click()
     # Wait for the page to load
     driver.find_element_by_xpath(
         "//*[normalize-space(text()) = 'MTM Summary']/../../..")
+
+
+def format_date(day: datetime.date) -> str:
+    return day.strftime("%Y%m%d")
+
+
+def yesterday(day: datetime.date) -> datetime.date:
+    return day - datetime.timedelta(days=1)
+
+
+def quarter_ago(day: datetime.date) -> datetime.date:
+    return day - datetime.timedelta(days=90)
 
 
 def fetch_account_statement_csv(
@@ -49,11 +66,12 @@ def fetch_account_statement_csv(
 ) -> bytes:
     FETCH_URL = ('https://www.interactivebrokers.co.uk' +
                  '/AccountManagement/Statements/Run')
+    today = datetime.date.today()
     payload = {
         'format': 13,
-        'fromDate': '20201126',
-        'reportDate': '20201126',
-        'toDate': '20201126',
+        'fromDate': format_date(quarter_ago(today)),
+        'reportDate': format_date(yesterday(today)),
+        'toDate': format_date(yesterday(today)),
         'language': 'en',
         'period': 'DATE_RANGE',
         'statementCategory': 'DEFAULT_STATEMENT',
