@@ -75,7 +75,9 @@ def fetch_account_statement_csv(
         'language': 'en',
         'period': 'DATE_RANGE',
         'statementCategory': 'DEFAULT_STATEMENT',
-        'statementType': 'MTM_SUMMARY'
+        # There's also MTM_SUMMARY but that seems to have a strict subset of
+        # what DEFAULT_ACTIVITY has.
+        'statementType': 'DEFAULT_ACTIVITY'
     }
     headers = {
         'SessionId': am_session_id,
