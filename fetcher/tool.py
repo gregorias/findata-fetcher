@@ -12,6 +12,7 @@ import click
 
 from . import bcge
 from . import bcgecc
+from . import degiro
 from . import ib
 from . import mbank
 
@@ -67,6 +68,12 @@ def pull_bcgecc(config: dict) -> bytes:
 
 
 @wrap_puller
+def pull_degiro(config: dict) -> bytes:
+    """Fetches Degiro's statement into a CSV file."""
+    return degiro.fetch_statement(extract_degiro_credentials(config))
+
+
+@wrap_puller
 def pull_ib(config: dict) -> bytes:
     """Fetches Interactive Brokers into a CSV file."""
     return ib.fetch_data(extract_ib_credentials(config))
@@ -84,6 +91,10 @@ def extract_bcge_credentials(config: dict) -> bcge.Credentials:
 
 def extract_bcgecc_credentials(config: dict) -> bcgecc.Credentials:
     return bcgecc.Credentials(id=config['bcgecc_id'], pwd=config['bcgecc_pwd'])
+
+
+def extract_degiro_credentials(config: dict) -> degiro.Credentials:
+    return degiro.Credentials(id=config['degiro_id'], pwd=config['degiro_pwd'])
 
 
 def extract_ib_credentials(config: dict) -> ib.Credentials:
