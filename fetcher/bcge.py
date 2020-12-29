@@ -67,6 +67,21 @@ def download_url_request_json_payload(account_id: str,
     }
 
 
+def prepare_headers(cookies: dict) -> dict:
+    return {
+        'X-CSRF-TOKEN':
+        cookies['CSRF-TOKEN'],
+        'Host':
+        'www.bcge.ch',
+        'Origin':
+        'https://www.bcge.ch',
+        'Referer':
+        'https://www.bcge.ch/next/?type=iframe',
+        'User-Agent':
+        'Mozilla/5.0 (X11; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0',
+    }
+
+
 def fetch_download_url(driver: webdriver.remote.webdriver.WebDriver,
                        account_id: str) -> str:
     fetch_page = ('https://www.bcge.ch/' +
@@ -76,7 +91,7 @@ def fetch_download_url(driver: webdriver.remote.webdriver.WebDriver,
         from_date=datetime.date(2018, 1, 1),
         to_date=datetime.date.today())
     cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
-    headers = {'X-CSRF-TOKEN': cookies['CSRF-TOKEN']}
+    headers = prepare_headers(cookies)
     response = requests.post(fetch_page,
                              headers=headers,
                              cookies=cookies,
@@ -93,7 +108,8 @@ def fetch_account_statement_csv(driver: webdriver.remote.webdriver.WebDriver,
                                 download_url: str) -> bytes:
     fetch_page = 'https://www.bcge.ch/next/' + download_url
     cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
-    response = requests.get(fetch_page, cookies=cookies)
+    headers = prepare_headers(cookies)
+    response = requests.get(fetch_page, headers=headers, cookies=cookies)
     if not response.ok:
         raise Exception("The statement fetch request has failed. " +
                         ('Response reason: {0}, parameters: {1}'
