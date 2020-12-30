@@ -68,9 +68,15 @@ def pull_bcgecc(config: dict) -> bytes:
 
 
 @wrap_puller
-def pull_degiro(config: dict) -> bytes:
-    """Fetches Degiro's statement into a CSV file."""
-    return degiro.fetch_statement(extract_degiro_credentials(config))
+def pull_degiro_account(config: dict) -> bytes:
+    """Fetches Degiro's account statement into a CSV file."""
+    return degiro.fetch_account_statement(extract_degiro_credentials(config))
+
+
+@wrap_puller
+def pull_degiro_portfolio(config: dict) -> bytes:
+    """Fetches Degiro's portfolio statement into a CSV file."""
+    return degiro.fetch_portfolio_statement(extract_degiro_credentials(config))
 
 
 @wrap_puller

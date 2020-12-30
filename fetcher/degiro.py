@@ -59,6 +59,21 @@ def fetch_csv(url: str, cookies) -> bytes:
     return response.content
 
 
+def fetch_account(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
+    logging.info("Fetching account.")
+    raise Exception("unimplemented")
+    exportButton = driver.find_element(By.CSS_SELECTOR,
+                                       '[data-name="exportButton"]')
+    exportButton.click()
+    reportExportForm = driver.find_element(By.CSS_SELECTOR,
+                                           '[data-name="reportExportForm"]')
+    csvLink = reportExportForm.find_element(
+        By.XPATH, "//a[normalize-space(text()) = 'CSV']")
+    csvFetchUrl = csvLink.get_attribute('href')
+    cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
+    return fetch_csv(csvFetchUrl, cookies)
+
+
 def fetch_portfolio(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     logging.info("Fetching portfolio.")
     portfolioSideBarLink = driver.find_element(By.CSS_SELECTOR,
@@ -76,8 +91,21 @@ def fetch_portfolio(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     return fetch_csv(csvFetchUrl, cookies)
 
 
-def fetch_statement(creds: Credentials) -> bytes:
-    """Fetches Degiro's statement using Selenium
+def fetch_account_statement(creds: Credentials) -> bytes:
+    """Fetches Degiro's account statement using Selenium
+
+    Returns:
+        A CSV UTF-8 encoded statement.
+    """
+    with webdriver.Firefox() as driver:
+        driver.implicitly_wait(30)
+        login(creds, driver)
+        wait_for_login(driver)
+        return fetch_account(driver)
+
+
+def fetch_portfolio_statement(creds: Credentials) -> bytes:
+    """Fetches Degiro's portfolio statement using Selenium
 
     Returns:
         A CSV UTF-8 encoded statement.
