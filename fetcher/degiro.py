@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """Fetches account statement from Degiro"""
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 import logging
+import re
 
 from selenium import webdriver  # type: ignore
 from selenium.webdriver.common.by import By  # type: ignore
@@ -35,8 +36,22 @@ def wait_for_login(driver: webdriver.remote.webdriver.WebDriver):
             'https://trader.degiro.nl/trader/#/markets'))
 
 
+def getIntAccount(
+        driver: webdriver.remote.webdriver.WebDriver) -> Optional[str]:
+    urls = [r.url for r in driver.requests]
+    matches = [re.search('intAccount=([0-9]+)', u) for u in urls]
+    for m in matches:
+        if m:
+            return m[1]
+    return None
+
+
 def fetch_csv(url: str, cookies) -> bytes:
-    response = requests.post(url, cookies=cookies)
+    headers = {
+        'user-agent': ('Mozilla/5.0 (X11; Linux x86_64; rv:84.0) ' +
+                       'Gecko/20100101 Firefox/84.0'),
+    }
+    response = requests.get(url, headers=headers, cookies=cookies)
     if not response.ok:
         raise Exception("The URL fetch request has failed. " +
                         ('Response reason: {0}, parameters: {1}'
