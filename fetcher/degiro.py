@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Fetches account statement from Degiro"""
+from datetime import date, timedelta
 from typing import NamedTuple, Optional
 import logging
 import re
@@ -36,16 +37,6 @@ def wait_for_login(driver: webdriver.remote.webdriver.WebDriver):
             'https://trader.degiro.nl/trader/#/markets'))
 
 
-def getIntAccount(
-        driver: webdriver.remote.webdriver.WebDriver) -> Optional[str]:
-    urls = [r.url for r in driver.requests]
-    matches = [re.search('intAccount=([0-9]+)', u) for u in urls]
-    for m in matches:
-        if m:
-            return m[1]
-    return None
-
-
 def fetch_csv(url: str, cookies) -> bytes:
     headers = {
         'user-agent': ('Mozilla/5.0 (X11; Linux x86_64; rv:84.0) ' +
@@ -59,9 +50,28 @@ def fetch_csv(url: str, cookies) -> bytes:
     return response.content
 
 
+def get_account_overview_url(from_date: date, to_date: date) -> str:
+    date_format = "%Y-%m-%d"
+    return (
+        'https://trader.degiro.nl/trader/#/account-overview' +
+        '?fromDate={from_date:s}&toDate={to_date:s}&aggregateCashFunds=true' +
+        '&currency=All').format(
+            from_date=from_date.strftime(date_format),
+            to_date=to_date.strftime(date_format),
+        )
+
+
+def get_three_months_ago(start_date: date) -> date:
+    return start_date - timedelta(93)
+
+
 def fetch_account(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     logging.info("Fetching account.")
-    raise Exception("unimplemented")
+    driver.get(
+        get_account_overview_url(
+            from_date=get_three_months_ago(date.today()),
+            to_date=date.today(),
+        ))
     exportButton = driver.find_element(By.CSS_SELECTOR,
                                        '[data-name="exportButton"]')
     exportButton.click()
