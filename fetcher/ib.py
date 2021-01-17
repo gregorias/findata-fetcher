@@ -91,7 +91,9 @@ def fetch_account_statement_csv(
         raise Exception("The statement fetch request has failed. " +
                         ('Response reason: {0}, parameters: {1}'
                          ).format(response.reason, (FETCH_URL, cookies)))
-    return base64.decodestring(
+    # TODO Cover this line with a test, it used to produce a DeprecationWarning
+    # that I have missed.
+    return base64.decodebytes(
         json.loads(response.content)['fileContent'].encode('ascii'))
 
 
