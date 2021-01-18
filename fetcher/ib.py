@@ -60,6 +60,12 @@ def quarter_ago(day: datetime.date) -> datetime.date:
     return day - datetime.timedelta(days=90)
 
 
+def decode_account_statement_fetch_response_content(
+        response_content: bytes) -> bytes:
+    return base64.decodebytes(
+        json.loads(response_content)['fileContent'].encode('ascii'))
+
+
 def fetch_account_statement_csv(
     am_session_id: str,
     cookies: Dict[str, str],
@@ -91,10 +97,7 @@ def fetch_account_statement_csv(
         raise Exception("The statement fetch request has failed. " +
                         ('Response reason: {0}, parameters: {1}'
                          ).format(response.reason, (FETCH_URL, cookies)))
-    # TODO Cover this line with a test, it used to produce a DeprecationWarning
-    # that I have missed.
-    return base64.decodebytes(
-        json.loads(response.content)['fileContent'].encode('ascii'))
+    return decode_account_statement_fetch_response_content(response.content)
 
 
 def fetch_account_statement(
