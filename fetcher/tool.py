@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Fetch my accounting data into a CSV file.
 
@@ -12,6 +13,7 @@ import click
 
 from . import bcge
 from . import bcgecc
+from . import cs
 from . import degiro
 from . import ib
 from . import mbank
@@ -68,6 +70,12 @@ def pull_bcgecc(config: dict) -> bytes:
 
 
 @wrap_puller
+def pull_cs_transactions(config: dict) -> bytes:
+    """Fetches Charles Schwab account history into a CSV file."""
+    return cs.fetch_account_history(extract_cs_credentials(config))
+
+
+@wrap_puller
 def pull_degiro_account(config: dict) -> bytes:
     """Fetches Degiro's account statement into a CSV file."""
     return degiro.fetch_account_statement(extract_degiro_credentials(config))
@@ -97,6 +105,10 @@ def extract_bcge_credentials(config: dict) -> bcge.Credentials:
 
 def extract_bcgecc_credentials(config: dict) -> bcgecc.Credentials:
     return bcgecc.Credentials(id=config['bcgecc_id'], pwd=config['bcgecc_pwd'])
+
+
+def extract_cs_credentials(config: dict) -> cs.Credentials:
+    return cs.Credentials(id=config['cs_id'], pwd=config['cs_pwd'])
 
 
 def extract_degiro_credentials(config: dict) -> degiro.Credentials:

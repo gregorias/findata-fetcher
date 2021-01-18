@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """Fetches account statement from Degiro"""
 from datetime import date, timedelta
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 import logging
-import re
 
 from selenium import webdriver  # type: ignore
 from selenium.webdriver.common.by import By  # type: ignore
