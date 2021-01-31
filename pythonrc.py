@@ -3,9 +3,12 @@
 # in my (b)python setup and provides convenient bindings.
 from selenium import webdriver
 import json
+import requests
 
 import fetcher.tool as t
+from fetcher.driverutils import driver_cookie_jar_to_requests_cookies
 from fetcher import bcge
+from fetcher import cs
 from fetcher import degiro
 from fetcher import ib
 
