@@ -13,6 +13,7 @@ from selenium.webdriver.support import expected_conditions  # type: ignore
 from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
 import requests
 
+from .dateutils import yesterday
 from .driverutils import driver_cookie_jar_to_requests_cookies
 
 
@@ -50,10 +51,6 @@ def go_to_reports_page(driver: webdriver.remote.webdriver.WebDriver) -> None:
 
 def format_date(day: datetime.date) -> str:
     return day.strftime("%Y%m%d")
-
-
-def yesterday(day: datetime.date) -> datetime.date:
-    return day - datetime.timedelta(days=1)
 
 
 def quarter_ago(day: datetime.date) -> datetime.date:
