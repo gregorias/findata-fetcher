@@ -78,7 +78,7 @@ def prepare_headers(cookies: dict) -> dict:
         'Referer':
         'https://www.bcge.ch/next/?type=iframe',
         'User-Agent':
-        'Mozilla/5.0 (X11; Linux x86_64; rv:85.0) Gecko/20100101 Firefox/85.0',
+        'Mozilla/5.0 (X11; Linux x86_64; rv:86.0) Gecko/20100101 Firefox/86.0',
     }
 
 
