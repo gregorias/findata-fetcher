@@ -99,6 +99,17 @@ def pull_mbank(config: dict) -> bytes:
     return mbank.fetch_mbank_data(extract_mbank_credentials(config))
 
 
+@cli.command()
+@click.pass_context
+def pull_all(ctx) -> None:
+    """Fetches data from all implemented sources."""
+    try:
+        raw_data = ctx.obj['config']
+    except Exception:
+        logging.exception("Could not fetch data.")
+    raise Exception("Unimplemented")
+
+
 def extract_bcge_credentials(config: dict) -> bcge.Credentials:
     return bcge.Credentials(id=config['bcge_id'], pwd=config['bcge_pwd'])
 
