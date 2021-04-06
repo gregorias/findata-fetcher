@@ -20,3 +20,7 @@ def set_value(driver: webdriver.remote.webdriver.WebDriver, element,
 
 def driver_cookie_jar_to_requests_cookies(driver_cookies: dict) -> dict:
     return {c['name']: c['value'] for c in driver_cookies}
+
+
+def get_user_agent(driver: webdriver.remote.webdriver.WebDriver) -> str:
+    return driver.execute_script("return navigator.userAgent;")
