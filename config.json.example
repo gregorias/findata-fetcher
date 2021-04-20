@@ -1,5 +1,6 @@
 {
   "logging_file": "ledupt.log",
+  "download_directory": "/home/user/Downloads",
 
   "bcge_id": "AB123123",
   "bcge_pwd": "hunter2",
@@ -15,6 +16,9 @@
 
   "ib_id": "abc123",
   "ib_pwd": "hunter2",
+
+  "gmail_id": "abc123",
+  "gmail_pwd": "hunter2",
 
   "mbank_id": "12345678",
   "mbank_pwd": "hunter2",

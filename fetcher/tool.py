@@ -8,14 +8,17 @@ Usage: python -m fetcher.tool --help
 import functools
 import json
 import logging
+from pathlib import PurePath
 
 import click
 
 from . import bcge
 from . import bcgecc
+from . import coop
 from . import cs
 from . import degiro
 from . import ib
+from . import gmail
 from . import mbank
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
@@ -67,6 +70,17 @@ def pull_bcge(config: dict) -> bytes:
 def pull_bcgecc(config: dict) -> bytes:
     """Fetches BCGE CC data into a CSV file."""
     return bcgecc.fetch_data(extract_bcgecc_credentials(config))
+
+
+@cli.command()
+@click.pass_context
+def pull_coop_receipts(ctx) -> None:
+    """Fetches Coop receipt PDFs."""
+    config = ctx.obj['config']
+    coop.fetch_and_archive_receipts(
+        extract_gmail_credentials(config),
+        PurePath(config['download_directory']),
+    )
 
 
 @wrap_puller
@@ -128,6 +142,10 @@ def extract_degiro_credentials(config: dict) -> degiro.Credentials:
 
 def extract_ib_credentials(config: dict) -> ib.Credentials:
     return ib.Credentials(id=config['ib_id'], pwd=config['ib_pwd'])
+
+
+def extract_gmail_credentials(config: dict) -> gmail.Credentials:
+    return gmail.Credentials(id=config['gmail_id'], pwd=config['gmail_pwd'])
 
 
 def extract_mbank_credentials(config: dict) -> mbank.Credentials:

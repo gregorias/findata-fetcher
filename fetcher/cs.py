@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""This modules implements Charles Schwab statement fetchers."""
+"""This module implements Charles Schwab statement fetchers."""
 import datetime
 import time
 from typing import Dict, NamedTuple
