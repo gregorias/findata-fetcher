@@ -108,6 +108,14 @@ def fetch_account_statement(
     return fetch_account_statement_csv(am_session_id, cookies)
 
 
+def fetch_data_with_driver(driver: webdriver.remote.webdriver.WebDriver,
+                           creds: Credentials) -> bytes:
+    driver.implicitly_wait(60)
+    login(creds, driver)
+    wait_for_logged_in_state(driver)
+    return fetch_account_statement(driver)
+
+
 def fetch_data(creds: Credentials) -> bytes:
     """Fetches Interactive Brokers's transaction data using Selenium
 
@@ -115,7 +123,4 @@ def fetch_data(creds: Credentials) -> bytes:
         A CSV with the fetched transactions.
     """
     with webdriver.Firefox() as driver:
-        driver.implicitly_wait(60)
-        login(creds, driver)
-        wait_for_logged_in_state(driver)
-        return fetch_account_statement(driver)
+        return fetch_data_with_driver(driver, creds)

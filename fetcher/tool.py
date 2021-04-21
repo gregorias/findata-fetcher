@@ -10,6 +10,7 @@ import json
 import logging
 from pathlib import PurePath
 
+from selenium import webdriver  # type: ignore
 import click
 
 from . import bcge
@@ -44,6 +45,10 @@ def cli(ctx, config_file):
     logging.getLogger('').addHandler(stderr)
 
 
+def read_config_from_context(ctx):
+    return ctx.obj['config']
+
+
 def wrap_puller(fun):
     @cli.command()
     @click.argument('output_file', type=click.File(mode='wb', lazy=True))
@@ -51,7 +56,7 @@ def wrap_puller(fun):
     @functools.wraps(fun)
     def pull_xxx(ctx, output_file):
         try:
-            raw_data = fun(ctx.obj['config'])
+            raw_data = fun(read_config_from_context(ctx))
         except Exception:
             logging.exception("Could not fetch data.")
         else:
@@ -117,11 +122,37 @@ def pull_mbank(config: dict) -> bytes:
 @click.pass_context
 def pull_all(ctx) -> None:
     """Fetches data from all implemented sources."""
-    try:
-        raw_data = ctx.obj['config']
-    except Exception:
-        logging.exception("Could not fetch data.")
-    raise Exception("Unimplemented")
+    config = read_config_from_context(ctx)
+    download_directory = PurePath(config['download_directory'])
+    coop.fetch_and_archive_receipts(
+        extract_gmail_credentials(config),
+        download_directory,
+    )
+    with webdriver.Firefox() as driver:
+        with open(download_directory / 'bcge.csv', 'wb') as f:
+            f.write(
+                bcge.fetch_bcge_data_with_driver(
+                    driver, extract_bcge_credentials(config)))
+        with open(download_directory / 'bcgecc.csv', 'wb') as f:
+            f.write(
+                bcgecc.fetch_data_with_driver(
+                    extract_bcgecc_credentials(config), driver))
+        with open(download_directory / 'cs.csv', 'wb') as f:
+            f.write(
+                cs.fetch_account_history_with_driver(
+                    driver, extract_cs_credentials(config)))
+        with open(download_directory / 'degiro.csv', 'wb') as f:
+            f.write(
+                degiro.fetch_account_statement_with_driver(
+                    driver, extract_degiro_credentials(config)))
+        with open(download_directory / 'ib.csv', 'wb') as f:
+            f.write(
+                ib.fetch_data_with_driver(driver,
+                                          extract_ib_credentials(config)))
+        with open(download_directory / 'mbank.csv', 'wb') as f:
+            f.write(
+                mbank.fetch_mbank_data_with_driver(
+                    driver, extract_mbank_credentials(config)))
 
 
 def extract_bcge_credentials(config: dict) -> bcge.Credentials:

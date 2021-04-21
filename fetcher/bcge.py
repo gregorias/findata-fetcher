@@ -127,6 +127,16 @@ def fetch_all_transactions_since_2018(
     return account_statement_raw.decode('latin-1').encode('utf-8')
 
 
+def fetch_bcge_data_with_driver(driver: webdriver.remote.webdriver.WebDriver,
+                                creds: Credentials) -> bytes:
+    logging.info("Logging in.")
+    login(creds, driver)
+    logging.info("Waiting for login.")
+    wait_for_logged_in_state(driver)
+    logging.info("Fetching transaction data.")
+    return fetch_all_transactions_since_2018(driver)
+
+
 def fetch_bcge_data(creds: Credentials) -> bytes:
     """Fetches BCGE's transaction data using Selenium
 
@@ -134,9 +144,4 @@ def fetch_bcge_data(creds: Credentials) -> bytes:
         A CSV UTF-8 encoded string with the fetched transactions.
     """
     with webdriver.Firefox() as driver:
-        logging.info("Logging in.")
-        login(creds, driver)
-        logging.info("Waiting for login.")
-        wait_for_logged_in_state(driver)
-        logging.info("Fetching transaction data.")
-        return fetch_all_transactions_since_2018(driver)
+        return fetch_bcge_data_with_driver(driver, creds)

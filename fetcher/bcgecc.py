@@ -29,7 +29,7 @@ def login(creds: Credentials,
             (By.ID, username_field_name)))
     driver.find_element(By.ID,
                         username_field_name).send_keys(creds.id + Keys.TAB)
-    driver.find_element(By.ID, "password").send_keys(creds.pwd + Keys.RETURN)
+    driver.find_element(By.ID, "Passwort").send_keys(creds.pwd + Keys.RETURN)
     # TODO wait.until(expected_conditions.url_matches(MAIN_PAGE))
 
 
@@ -39,6 +39,19 @@ def fetch_all_transactions_since_2018(
     return b''
 
 
+def fetch_data_with_driver(
+        creds: Credentials,
+        driver: webdriver.remote.webdriver.WebDriver) -> bytes:
+    """Fetches Viseca's transaction data using Selenium
+
+    Returns:
+        A CSV UTF-8 encoded string with the fetched transactions.
+    """
+    login(creds, driver)
+    csv = fetch_all_transactions_since_2018(driver)
+    return csv
+
+
 def fetch_data(creds: Credentials) -> bytes:
     """Fetches Viseca's transaction data using Selenium
 
@@ -46,6 +59,4 @@ def fetch_data(creds: Credentials) -> bytes:
         A CSV UTF-8 encoded string with the fetched transactions.
     """
     with webdriver.Firefox() as driver:
-        login(creds, driver)
-        csv = fetch_all_transactions_since_2018(driver)
-        return csv
+        return fetch_data_with_driver(creds, driver)
