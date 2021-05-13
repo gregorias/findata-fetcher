@@ -95,8 +95,8 @@ def fetch_all_transactions_since_2018(
     return resp.content
 
 
-def fetch_mbank_data_with_driver(driver: webdriver.remote.webdriver.WebDriver,
-                                 creds: Credentials) -> bytes:
+def fetch_mbank_data(driver: webdriver.remote.webdriver.WebDriver,
+                     creds: Credentials) -> bytes:
     """Fetches Mbank's transaction data using Selenium
 
     Returns:
@@ -105,13 +105,3 @@ def fetch_mbank_data_with_driver(driver: webdriver.remote.webdriver.WebDriver,
     login_to_mbank(creds, driver)
     csv = fetch_all_transactions_since_2018(driver)
     return transform_and_strip_mbanks_csv(csv)
-
-
-def fetch_mbank_data(creds: Credentials) -> bytes:
-    """Fetches Mbank's transaction data using Selenium
-
-    Returns:
-        A CSV UTF-8 encoded string with the fetched transactions.
-    """
-    with webdriver.Firefox() as driver:
-        return fetch_mbank_data_with_driver(driver, creds)

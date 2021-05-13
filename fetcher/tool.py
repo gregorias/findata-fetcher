@@ -122,10 +122,21 @@ def pull_ib_helper(driver: webdriver.remote.webdriver.WebDriver,
         f.write(ib.fetch_data(driver, extract_ib_credentials(config)))
 
 
-@wrap_puller
-def pull_mbank(config: dict) -> bytes:
+@cli.command()
+@click.pass_context
+def pull_mbank(ctx) -> None:
     """Fetches Mbank data into a CSV file."""
-    return mbank.fetch_mbank_data(extract_mbank_credentials(config))
+    config = read_config_from_context(ctx)
+    download_directory = PurePath(config['download_directory'])
+    with webdriver.Firefox() as driver:
+        pull_mbank_helper(driver, download_directory, config)
+
+
+def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
+                      download_directory: PurePath, config: dict) -> None:
+    with open(download_directory / 'mbank.csv', 'wb') as f:
+        f.write(
+            mbank.fetch_mbank_data(driver, extract_mbank_credentials(config)))
 
 
 @cli.command()
@@ -158,8 +169,8 @@ def pull_all(ctx) -> None:
         pull_ib_helper(driver, download_directory, config)
         with open(download_directory / 'mbank.csv', 'wb') as f:
             f.write(
-                mbank.fetch_mbank_data_with_driver(
-                    driver, extract_mbank_credentials(config)))
+                mbank.fetch_mbank_data(driver,
+                                       extract_mbank_credentials(config)))
 
 
 def extract_bcge_credentials(config: dict) -> bcge.Credentials:
