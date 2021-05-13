@@ -93,7 +93,7 @@ def pull_bcgecc(ctx) -> None:
 
 def pull_bcgecc_helper(driver: webdriver.remote.webdriver.WebDriver,
                        download_directory: PurePath, config: dict) -> None:
-    with open(download_directory / 'bcgecc.csv', 'wb') as f:
+    with open(download_directory / 'bcgecc.pdf', 'wb') as f:
         f.write(bcgecc.fetch_data(extract_bcgecc_credentials(config), driver))
 
 
