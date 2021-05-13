@@ -18,6 +18,7 @@ from . import bcgecc
 from . import coop
 from . import cs
 from . import degiro
+from . import finpension
 from . import ib
 from . import gmail
 from . import mbank
@@ -152,6 +153,14 @@ def pull_degiro_portfolio(config: dict) -> bytes:
     return degiro.fetch_portfolio_statement(extract_degiro_credentials(config))
 
 
+def pull_finpension_helper(driver: webdriver.remote.webdriver.WebDriver,
+                           download_directory: PurePath, config: dict) -> None:
+    with open(download_directory / 'finpension.csv', 'wb') as f:
+        f.write(
+            finpension.fetch_data(driver,
+                                  extract_finpension_credentials(config)))
+
+
 @cli.command()
 @click.pass_context
 def pull_ib(ctx) -> None:
@@ -219,6 +228,11 @@ def extract_cs_credentials(config: dict) -> cs.Credentials:
 
 def extract_degiro_credentials(config: dict) -> degiro.Credentials:
     return degiro.Credentials(id=config['degiro_id'], pwd=config['degiro_pwd'])
+
+
+def extract_finpension_credentials(config: dict) -> finpension.Credentials:
+    return finpension.Credentials(id=config['finpension_id'],
+                                  pwd=config['finpension_pwd'])
 
 
 def extract_ib_credentials(config: dict) -> ib.Credentials:
