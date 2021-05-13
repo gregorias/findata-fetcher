@@ -46,9 +46,9 @@ def wait_for_user_to_provide_pin_and_login(
 def login(creds: Credentials,
           driver: webdriver.remote.webdriver.WebDriver) -> None:
     """Logs into the Charles Schwab website"""
-    LOGIN_PAGE = 'https://www.schwab.com/public/schwab/client_home#'
+    LOGIN_PAGE = 'https://client.schwab.com/Login/SignOn/CustomerCenterLogin.aspx'
     driver.get(LOGIN_PAGE)
-    driver.switch_to.frame("lms-home")
+    driver.switch_to.frame("lmsSecondaryLogin")
     login_id = driver.find_element(By.ID, "LoginId")
     wait = WebDriverWait(driver, 30)
     wait.until(expected_conditions.visibility_of(login_id))
