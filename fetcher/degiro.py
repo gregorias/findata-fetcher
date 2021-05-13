@@ -100,9 +100,8 @@ def fetch_portfolio(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     return fetch_csv(csvFetchUrl, cookies)
 
 
-def fetch_account_statement_with_driver(
-        driver: webdriver.remote.webdriver.WebDriver,
-        creds: Credentials) -> bytes:
+def fetch_account_statement(driver: webdriver.remote.webdriver.WebDriver,
+                            creds: Credentials) -> bytes:
     """Fetches Degiro's account statement using Selenium
 
     Returns:
@@ -112,16 +111,6 @@ def fetch_account_statement_with_driver(
     login(creds, driver)
     wait_for_login(driver)
     return fetch_account(driver)
-
-
-def fetch_account_statement(creds: Credentials) -> bytes:
-    """Fetches Degiro's account statement using Selenium
-
-    Returns:
-        A CSV UTF-8 encoded statement.
-    """
-    with webdriver.Firefox() as driver:
-        return fetch_account_statement_with_driver(driver, creds)
 
 
 def fetch_portfolio_statement(creds: Credentials) -> bytes:

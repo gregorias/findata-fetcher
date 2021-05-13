@@ -94,10 +94,24 @@ def pull_cs_transactions(config: dict) -> bytes:
     return cs.fetch_account_history(extract_cs_credentials(config))
 
 
-@wrap_puller
-def pull_degiro_account(config: dict) -> bytes:
+@cli.command()
+@click.pass_context
+def pull_degiro_account(ctx) -> None:
     """Fetches Degiro's account statement into a CSV file."""
-    return degiro.fetch_account_statement(extract_degiro_credentials(config))
+    config = read_config_from_context(ctx)
+    download_directory = PurePath(config['download_directory'])
+    with webdriver.Firefox() as driver:
+        pull_degiro_account_statement_helper(driver, download_directory,
+                                             config)
+
+
+def pull_degiro_account_statement_helper(
+        driver: webdriver.remote.webdriver.WebDriver,
+        download_directory: PurePath, config: dict) -> None:
+    with open(download_directory / 'degiro.csv', 'wb') as f:
+        f.write(
+            degiro.fetch_account_statement(driver,
+                                           extract_degiro_credentials(config)))
 
 
 @wrap_puller
@@ -162,10 +176,8 @@ def pull_all(ctx) -> None:
             f.write(
                 cs.fetch_account_history_with_driver(
                     driver, extract_cs_credentials(config)))
-        with open(download_directory / 'degiro.csv', 'wb') as f:
-            f.write(
-                degiro.fetch_account_statement_with_driver(
-                    driver, extract_degiro_credentials(config)))
+        pull_degiro_account_statement_helper(driver, download_directory,
+                                             config)
         pull_ib_helper(driver, download_directory, config)
         pull_mbank_helper(driver, download_directory, config)
 
