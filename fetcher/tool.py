@@ -81,10 +81,20 @@ def pull_bcge_helper(driver: webdriver.remote.webdriver.WebDriver,
         f.write(bcge.fetch_bcge_data(driver, extract_bcge_credentials(config)))
 
 
-@wrap_puller
-def pull_bcgecc(config: dict) -> bytes:
+@cli.command()
+@click.pass_context
+def pull_bcgecc(ctx) -> None:
     """Fetches BCGE CC data into a CSV file."""
-    return bcgecc.fetch_data(extract_bcgecc_credentials(config))
+    config = read_config_from_context(ctx)
+    download_directory = PurePath(config['download_directory'])
+    with webdriver.Firefox() as driver:
+        return pull_bcgecc_helper(driver, download_directory, config)
+
+
+def pull_bcgecc_helper(driver: webdriver.remote.webdriver.WebDriver,
+                       download_directory: PurePath, config: dict) -> None:
+    with open(download_directory / 'bcgecc.csv', 'wb') as f:
+        f.write(bcgecc.fetch_data(extract_bcgecc_credentials(config), driver))
 
 
 @cli.command()
@@ -187,10 +197,7 @@ def pull_all(ctx) -> None:
     )
     with webdriver.Firefox() as driver:
         pull_bcge_helper(driver, download_directory, config)
-        with open(download_directory / 'bcgecc.csv', 'wb') as f:
-            f.write(
-                bcgecc.fetch_data_with_driver(
-                    extract_bcgecc_credentials(config), driver))
+        pull_bcgecc_helper(driver, download_directory, config)
         pull_cs_account_history_helper(driver, download_directory, config)
         pull_degiro_account_statement_helper(driver, download_directory,
                                              config)

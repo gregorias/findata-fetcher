@@ -39,9 +39,8 @@ def fetch_all_transactions_since_2018(
     return b''
 
 
-def fetch_data_with_driver(
-        creds: Credentials,
-        driver: webdriver.remote.webdriver.WebDriver) -> bytes:
+def fetch_data(creds: Credentials,
+               driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     """Fetches Viseca's transaction data using Selenium
 
     Returns:
@@ -50,13 +49,3 @@ def fetch_data_with_driver(
     login(creds, driver)
     csv = fetch_all_transactions_since_2018(driver)
     return csv
-
-
-def fetch_data(creds: Credentials) -> bytes:
-    """Fetches Viseca's transaction data using Selenium
-
-    Returns:
-        A CSV UTF-8 encoded string with the fetched transactions.
-    """
-    with webdriver.Firefox() as driver:
-        return fetch_data_with_driver(creds, driver)
