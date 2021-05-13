@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Fetches account statement data from Interactive Brokers"""
+"""Fetches MTM summary account statement data from Interactive Brokers"""
 import base64
 import datetime
 import json
@@ -34,16 +34,14 @@ def wait_for_logged_in_state(
         driver: webdriver.remote.webdriver.WebDriver) -> None:
     wait = WebDriverWait(driver, 120)
     wait.until(
-        expected_conditions.element_to_be_clickable(
-            (By.CSS_SELECTOR, '[aria-label="Reports"]')))
+        expected_conditions.presence_of_element_located(
+            (By.XPATH, "//*[normalize-space(text()) = 'Your Portfolio']")))
 
 
 def go_to_reports_page(driver: webdriver.remote.webdriver.WebDriver) -> None:
-    reports = driver.find_element(By.CSS_SELECTOR, '[aria-label="Reports"]')
-    # Clicking reports too quickly tends to hang up the website.
-    import time
-    time.sleep(1)
-    reports.click()
+    driver.get(
+        "https://www.interactivebrokers.co.uk/AccountManagement/AmAuthentication?action=Statements"
+    )
     # Wait for the page to load
     driver.find_element_by_xpath(
         "//*[normalize-space(text()) = 'MTM Summary']/../../..")

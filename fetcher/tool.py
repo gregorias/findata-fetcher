@@ -106,10 +106,14 @@ def pull_degiro_portfolio(config: dict) -> bytes:
     return degiro.fetch_portfolio_statement(extract_degiro_credentials(config))
 
 
-@wrap_puller
-def pull_ib(config: dict) -> bytes:
+@cli.command()
+@click.pass_context
+def pull_ib(ctx) -> None:
     """Fetches Interactive Brokers into a CSV file."""
-    return ib.fetch_data(extract_ib_credentials(config))
+    config = read_config_from_context(ctx)
+    download_directory = PurePath(config['download_directory'])
+    with open(download_directory / 'ib.csv', 'wb') as f:
+        f.write(ib.fetch_data(extract_ib_credentials(config)))
 
 
 @wrap_puller

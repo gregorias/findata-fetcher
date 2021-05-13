@@ -1,12 +1,21 @@
 # findata-fetcher
 
-This project is a collection of scripts that automate fetching or scraping
-financial data from financial institutions' websites, e.g., Interactive
-Brokers, BCGE.
+This project is a collection of scripts that automate fetching statements or
+scraping financial data from financial institutions' websites, e.g.,
+Interactive Brokers, BCGE.
 
 You can use the fetched data to process it into a different database, e.g.,
 [hledupt](https://github.com/gregorias/hledupt) uses this data to produce
 plaintext accounting files.
+
+Currently implemented fetchers are:
+
+* BCGE's account statement
+* Charles Schwab's account history
+* Coop receipt PDF from gmail
+* Degiro's portfolio and account statements
+* Interactive Brokers' MTM summary statement
+* mBank's account statement
 
 ## Installation
 
