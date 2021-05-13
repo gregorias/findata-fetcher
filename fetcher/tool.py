@@ -167,10 +167,7 @@ def pull_all(ctx) -> None:
                 degiro.fetch_account_statement_with_driver(
                     driver, extract_degiro_credentials(config)))
         pull_ib_helper(driver, download_directory, config)
-        with open(download_directory / 'mbank.csv', 'wb') as f:
-            f.write(
-                mbank.fetch_mbank_data(driver,
-                                       extract_mbank_credentials(config)))
+        pull_mbank_helper(driver, download_directory, config)
 
 
 def extract_bcge_credentials(config: dict) -> bcge.Credentials:
