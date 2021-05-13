@@ -112,8 +112,14 @@ def pull_ib(ctx) -> None:
     """Fetches Interactive Brokers into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
+    with webdriver.Firefox() as driver:
+        pull_ib_helper(driver, download_directory, config)
+
+
+def pull_ib_helper(driver: webdriver.remote.webdriver.WebDriver,
+                   download_directory: PurePath, config: dict) -> None:
     with open(download_directory / 'ib.csv', 'wb') as f:
-        f.write(ib.fetch_data(extract_ib_credentials(config)))
+        f.write(ib.fetch_data(driver, extract_ib_credentials(config)))
 
 
 @wrap_puller
@@ -149,10 +155,7 @@ def pull_all(ctx) -> None:
             f.write(
                 degiro.fetch_account_statement_with_driver(
                     driver, extract_degiro_credentials(config)))
-        with open(download_directory / 'ib.csv', 'wb') as f:
-            f.write(
-                ib.fetch_data_with_driver(driver,
-                                          extract_ib_credentials(config)))
+        pull_ib_helper(driver, download_directory, config)
         with open(download_directory / 'mbank.csv', 'wb') as f:
             f.write(
                 mbank.fetch_mbank_data_with_driver(
