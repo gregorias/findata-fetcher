@@ -89,9 +89,8 @@ def fetch_account_history_csv(cookies: Dict[str, str]) -> bytes:
     return response.content
 
 
-def fetch_account_history_with_driver(
-        driver: webdriver.remote.webdriver.WebDriver,
-        creds: Credentials) -> bytes:
+def fetch_account_history(driver: webdriver.remote.webdriver.WebDriver,
+                          creds: Credentials) -> bytes:
     """Fetches Charles Schwab's account history using Selenium
 
     Returns:
@@ -101,13 +100,3 @@ def fetch_account_history_with_driver(
     login(creds, driver)
     cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
     return fetch_account_history_csv(cookies)
-
-
-def fetch_account_history(creds: Credentials) -> bytes:
-    """Fetches Charles Schwab's account history using Selenium
-
-    Returns:
-        A CSV UTF-8 encoded statement.
-    """
-    with webdriver.Firefox() as driver:
-        return fetch_account_history_with_driver(driver, creds)

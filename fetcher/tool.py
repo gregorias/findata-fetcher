@@ -88,10 +88,22 @@ def pull_coop_receipts(ctx) -> None:
     )
 
 
-@wrap_puller
-def pull_cs_transactions(config: dict) -> bytes:
+@cli.command()
+@click.pass_context
+def pull_cs_account_history(ctx) -> None:
     """Fetches Charles Schwab account history into a CSV file."""
-    return cs.fetch_account_history(extract_cs_credentials(config))
+    config = read_config_from_context(ctx)
+    download_directory = PurePath(config['download_directory'])
+    with webdriver.Firefox() as driver:
+        pull_cs_account_history_helper(driver, download_directory, config)
+
+
+def pull_cs_account_history_helper(
+        driver: webdriver.remote.webdriver.WebDriver,
+        download_directory: PurePath, config: dict) -> None:
+    with open(download_directory / 'cs.csv', 'wb') as f:
+        f.write(
+            cs.fetch_account_history(driver, extract_cs_credentials(config)))
 
 
 @cli.command()
@@ -172,10 +184,7 @@ def pull_all(ctx) -> None:
             f.write(
                 bcgecc.fetch_data_with_driver(
                     extract_bcgecc_credentials(config), driver))
-        with open(download_directory / 'cs.csv', 'wb') as f:
-            f.write(
-                cs.fetch_account_history_with_driver(
-                    driver, extract_cs_credentials(config)))
+        pull_cs_account_history_helper(driver, download_directory, config)
         pull_degiro_account_statement_helper(driver, download_directory,
                                              config)
         pull_ib_helper(driver, download_directory, config)
