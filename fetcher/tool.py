@@ -65,10 +65,20 @@ def wrap_puller(fun):
     return pull_xxx
 
 
-@wrap_puller
-def pull_bcge(config: dict) -> bytes:
+@cli.command()
+@click.pass_context
+def pull_bcge(ctx) -> None:
     """Fetches BCGE data into a CSV file."""
-    return bcge.fetch_bcge_data(extract_bcge_credentials(config))
+    config = read_config_from_context(ctx)
+    download_directory = PurePath(config['download_directory'])
+    with webdriver.Firefox() as driver:
+        return pull_bcge_helper(driver, download_directory, config)
+
+
+def pull_bcge_helper(driver: webdriver.remote.webdriver.WebDriver,
+                     download_directory: PurePath, config: dict) -> None:
+    with open(download_directory / 'bcge.csv', 'wb') as f:
+        f.write(bcge.fetch_bcge_data(driver, extract_bcge_credentials(config)))
 
 
 @wrap_puller
@@ -176,10 +186,7 @@ def pull_all(ctx) -> None:
         download_directory,
     )
     with webdriver.Firefox() as driver:
-        with open(download_directory / 'bcge.csv', 'wb') as f:
-            f.write(
-                bcge.fetch_bcge_data_with_driver(
-                    driver, extract_bcge_credentials(config)))
+        pull_bcge_helper(driver, download_directory, config)
         with open(download_directory / 'bcgecc.csv', 'wb') as f:
             f.write(
                 bcgecc.fetch_data_with_driver(
