@@ -15,6 +15,7 @@ Currently implemented fetchers are:
 * Charles Schwab's account history
 * Coop receipt PDF from gmail
 * Degiro's portfolio and account statements
+* Finpension's transaction report (through gmail)
 * Interactive Brokers' MTM summary statement
 * mBank's account statement
 

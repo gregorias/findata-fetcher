@@ -12,20 +12,16 @@ from . import gmail
 
 
 def get_receipt_mail_numbers(imap: IMAP4) -> List[bytes]:
-    ret = imap.search(None, 'SUBJECT "Ihr digitaler Kassenzettel"')
-    if ret[0] != 'OK':
+    ret = gmail.search_for_inbox_mails(imap, "Ihr digitaler Kassenzettel")
+    if ret is None:
         raise Exception("Could not search for Coop receipts.")
-    return ret[1][0].split()
+    return ret
 
 
 def save_file(file_part, target_dir: PurePath) -> None:
-    fn_bytes, fn_encoding = decode_header(file_part.get_filename())[0]
-    if fn_encoding is None:
-        raise Exception("Filename encoding for " + str(fn_bytes) +
-                        " was None.")
-    filename = fn_bytes.decode(fn_encoding)
+    filename, payload = gmail.fetch_file(file_part)
     with open(target_dir / filename, 'wb') as f:
-        f.write(file_part.get_payload(decode=True))
+        f.write(payload)
 
 
 def fetch_and_archive_receipts(creds: gmail.Credentials,

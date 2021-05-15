@@ -153,12 +153,22 @@ def pull_degiro_portfolio(config: dict) -> bytes:
     return degiro.fetch_portfolio_statement(extract_degiro_credentials(config))
 
 
+@cli.command()
+@click.pass_context
+def pull_finpension(ctx) -> None:
+    """Fetches Finpension transactions into a CSV file."""
+    config = read_config_from_context(ctx)
+    download_directory = PurePath(config['download_directory'])
+    with webdriver.Firefox() as driver:
+        pull_finpension_helper(driver, download_directory, config)
+
+
 def pull_finpension_helper(driver: webdriver.remote.webdriver.WebDriver,
                            download_directory: PurePath, config: dict) -> None:
     with open(download_directory / 'finpension.csv', 'wb') as f:
         f.write(
-            finpension.fetch_data(driver,
-                                  extract_finpension_credentials(config)))
+            finpension.fetch_data(extract_finpension_credentials(config),
+                                  extract_gmail_credentials(config), driver))
 
 
 @cli.command()

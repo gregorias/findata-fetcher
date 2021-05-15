@@ -13,6 +13,7 @@ from fetcher import bcgecc
 from fetcher import cs
 from fetcher import coop
 from fetcher import degiro
+from fetcher import finpension
 from fetcher import ib
 from fetcher import gmail
 
@@ -22,6 +23,7 @@ with open('config.json', 'r') as cf:
     bcgecc_creds = t.extract_bcgecc_credentials(config)
     cs_creds = t.extract_cs_credentials(config)
     degiro_creds = t.extract_degiro_credentials(config)
+    finpension_creds = t.extract_finpension_credentials(config)
     gmail_creds = t.extract_gmail_credentials(config)
     ib_creds = t.extract_ib_credentials(config)
 
