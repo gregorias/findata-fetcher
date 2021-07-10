@@ -11,7 +11,8 @@ import logging
 from pathlib import PurePath
 
 from selenium import webdriver  # type: ignore
-import click
+from seleniumwire import webdriver as webdriverwire  # type: ignore
+import click  # type: ignore
 
 from . import bcge
 from . import bcgecc
@@ -177,7 +178,7 @@ def pull_ib(ctx) -> None:
     """Fetches Interactive Brokers into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriver.Firefox() as driver:
+    with webdriverwire.Firefox() as driver:
         pull_ib_helper(driver, download_directory, config)
 
 
@@ -214,13 +215,14 @@ def pull_all(ctx) -> None:
         extract_gmail_credentials(config),
         download_directory,
     )
+    with webdriverwire.Firefox() as driver:
+        pull_ib_helper(driver, download_directory, config)
     with webdriver.Firefox() as driver:
         pull_bcge_helper(driver, download_directory, config)
         pull_bcgecc_helper(driver, download_directory, config)
         pull_cs_account_history_helper(driver, download_directory, config)
         pull_degiro_account_statement_helper(driver, download_directory,
                                              config)
-        pull_ib_helper(driver, download_directory, config)
         pull_mbank_helper(driver, download_directory, config)
 
 

@@ -4,9 +4,10 @@ import base64
 import datetime
 import json
 import logging
-from typing import Dict, NamedTuple
+from typing import Dict, NamedTuple, Optional
 
 from selenium import webdriver  # type: ignore
+from seleniumwire import request  # type: ignore
 from selenium.webdriver.common.by import By  # type: ignore
 from selenium.webdriver.common.keys import Keys  # type: ignore
 from selenium.webdriver.support import expected_conditions  # type: ignore
@@ -61,8 +62,21 @@ def decode_account_statement_fetch_response_content(
         json.loads(response_content)['fileContent'].encode('ascii'))
 
 
+def get_last_get_request(
+        driver: webdriver.remote.webdriver.WebDriver
+) -> Optional[request.Request]:
+    """Returns the last GET request made in this session.
+
+    This GET request can be useful to fetch headers used by the IB app.
+    """
+    for r in reversed(driver.requests):
+        if r.method == 'GET':
+            return r
+    return None
+
+
 def fetch_account_statement_csv(
-    am_session_id: str,
+    headers: Dict[str, str],
     cookies: Dict[str, str],
 ) -> bytes:
     FETCH_URL = ('https://www.interactivebrokers.co.uk' +
@@ -81,7 +95,11 @@ def fetch_account_statement_csv(
         'statementType': 'DEFAULT_ACTIVITY'
     }
     headers = {
-        'SessionId': am_session_id,
+        'AM_UUID': headers['am_uuid'],
+        'AccountHash': headers['accounthash'],
+        'Sec-GPS': '1',
+        'SessionId': headers['sessionid'],
+        'User-Agent': headers['user-agent'],
     }
     response = requests.get(
         FETCH_URL,
@@ -100,10 +118,15 @@ def fetch_account_statement(
     logging.info("Going to the reports page.")
     go_to_reports_page(driver)
     logging.info("Reports page loaded, fetching cookies.")
-    am_session_id = driver.execute_script('return AM_SESSION_ID;')
+    last_get = get_last_get_request(driver)
+    if last_get is None:
+        raise Exception(
+            'Could not fetch the account statement, because we did not ' +
+            'find any previous GET requests in the session to initialize ' +
+            'the fetch requests ')
     cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
     logging.info("Fetching the CSV file.")
-    return fetch_account_statement_csv(am_session_id, cookies)
+    return fetch_account_statement_csv(dict(last_get.headers), cookies)
 
 
 def fetch_data(driver: webdriver.remote.webdriver.WebDriver,

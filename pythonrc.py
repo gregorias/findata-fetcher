@@ -2,6 +2,7 @@
 # I use this module for interactive debugging. It is automatically loaded
 # in my (b)python setup and provides convenient bindings.
 from selenium import webdriver
+from seleniumwire import webdriver as webdriverwire
 import email
 import json
 import requests
@@ -30,5 +31,11 @@ with open('config.json', 'r') as cf:
 
 def start_driver():
     driver = webdriver.Firefox()
+    driver.implicitly_wait(20)
+    return driver
+
+
+def start_driver_wire():
+    driver = webdriverwire.Firefox()
     driver.implicitly_wait(20)
     return driver

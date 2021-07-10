@@ -8,6 +8,7 @@ click = "==7.0"
 pyuserinput = "*"
 requests = "==2.25.*"
 selenium = ">=3.141.0"
+selenium-wire = "*"
 
 [dev-packages]
 bpython = "*"
@@ -16,3 +17,4 @@ yapf = "*"
 isort = "*"
 coverage = "*"
 mypy = "*"
+types-requests = "==2.25.*"
