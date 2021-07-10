@@ -51,22 +51,6 @@ def read_config_from_context(ctx):
     return ctx.obj['config']
 
 
-def wrap_puller(fun):
-    @cli.command()
-    @click.argument('output_file', type=click.File(mode='wb', lazy=True))
-    @click.pass_context
-    @functools.wraps(fun)
-    def pull_xxx(ctx, output_file):
-        try:
-            raw_data = fun(read_config_from_context(ctx))
-        except Exception:
-            logging.exception("Could not fetch data.")
-        else:
-            output_file.write(raw_data)
-
-    return pull_xxx
-
-
 @cli.command()
 @click.pass_context
 def pull_bcge(ctx) -> None:
@@ -142,16 +126,29 @@ def pull_degiro_account(ctx) -> None:
 def pull_degiro_account_statement_helper(
         driver: webdriver.remote.webdriver.WebDriver,
         download_directory: PurePath, config: dict) -> None:
-    with open(download_directory / 'degiro.csv', 'wb') as f:
+    with open(download_directory / 'degiro-account.csv', 'wb') as f:
         f.write(
             degiro.fetch_account_statement(driver,
                                            extract_degiro_credentials(config)))
 
 
-@wrap_puller
-def pull_degiro_portfolio(config: dict) -> bytes:
+@cli.command()
+@click.pass_context
+def pull_degiro_portfolio(ctx) -> None:
     """Fetches Degiro's portfolio statement into a CSV file."""
-    return degiro.fetch_portfolio_statement(extract_degiro_credentials(config))
+    config = read_config_from_context(ctx)
+    download_directory = PurePath(config['download_directory'])
+    with webdriver.Firefox() as driver:
+        pull_degiro_portfolio_helper(driver, download_directory, config)
+
+
+def pull_degiro_portfolio_helper(driver: webdriver.remote.webdriver.WebDriver,
+                                 download_directory: PurePath,
+                                 config: dict) -> None:
+    with open(download_directory / 'degiro-portfolio.csv', 'wb') as f:
+        f.write(
+            degiro.fetch_portfolio_statement(
+                driver, extract_degiro_credentials(config)))
 
 
 @cli.command()
@@ -223,6 +220,7 @@ def pull_all(ctx) -> None:
         pull_cs_account_history_helper(driver, download_directory, config)
         pull_degiro_account_statement_helper(driver, download_directory,
                                              config)
+        pull_degiro_portfolio_helper(driver, download_directory, config)
         pull_mbank_helper(driver, download_directory, config)
 
 

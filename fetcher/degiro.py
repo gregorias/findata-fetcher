@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Fetches account statement from Degiro"""
 from datetime import date, timedelta
+import time
 from typing import NamedTuple
 import logging
 
@@ -74,6 +75,7 @@ def fetch_account(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     exportButton = driver.find_element(By.CSS_SELECTOR,
                                        '[data-name="exportButton"]')
     exportButton.click()
+    time.sleep(1)
     reportExportForm = driver.find_element(By.CSS_SELECTOR,
                                            '[data-name="reportExportForm"]')
     csvLink = reportExportForm.find_element(
@@ -91,6 +93,7 @@ def fetch_portfolio(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     exportButton = driver.find_element(By.CSS_SELECTOR,
                                        '[data-name="exportButton"]')
     exportButton.click()
+    time.sleep(1)
     reportExportForm = driver.find_element(By.CSS_SELECTOR,
                                            '[data-name="reportExportForm"]')
     csvLink = reportExportForm.find_element(
@@ -113,14 +116,14 @@ def fetch_account_statement(driver: webdriver.remote.webdriver.WebDriver,
     return fetch_account(driver)
 
 
-def fetch_portfolio_statement(creds: Credentials) -> bytes:
+def fetch_portfolio_statement(driver: webdriver.remote.webdriver.WebDriver,
+                              creds: Credentials) -> bytes:
     """Fetches Degiro's portfolio statement using Selenium
 
     Returns:
         A CSV UTF-8 encoded statement.
     """
-    with webdriver.Firefox() as driver:
-        driver.implicitly_wait(30)
-        login(creds, driver)
-        wait_for_login(driver)
-        return fetch_portfolio(driver)
+    driver.implicitly_wait(30)
+    login(creds, driver)
+    wait_for_login(driver)
+    return fetch_portfolio(driver)
