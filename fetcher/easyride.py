@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""This module fetches the Coop receipt from Gmail."""
+"""This module EasyRide Quittung from Gmail."""
 from email.header import decode_header
 from pathlib import PurePath
 from imaplib import IMAP4
@@ -7,14 +7,11 @@ from typing import List
 
 from . import gmail
 
-# > imap.search(None, 'SUBJECT "Ihr digitaler Kassenzettel"')
-# ('OK', [b'1 2'])
-
 
 def get_receipt_mail_numbers(imap: IMAP4) -> List[bytes]:
-    ret = gmail.search_for_inbox_mails(imap, "Ihr digitaler Kassenzettel")
+    ret = gmail.search_for_inbox_mails(imap, "EasyRide")
     if ret is None:
-        raise Exception("Could not search for Coop receipts.")
+        raise Exception("Could not search for EasyRide receipts.")
     return ret
 
 
@@ -30,6 +27,6 @@ def fetch_and_archive_receipts(creds: gmail.Credentials,
         receipt_mail_numbers = get_receipt_mail_numbers(imap)
         for receipt_mail_no in receipt_mail_numbers:
             msg = gmail.fetch_mail(imap, receipt_mail_no)
-            pdf_part = list(msg.walk())[2]
+            pdf_part = list(msg.walk())[4]
             save_file(pdf_part, download_dir)
             gmail.archive_mail(imap, receipt_mail_no)

@@ -19,6 +19,7 @@ from . import bcgecc
 from . import coop
 from . import cs
 from . import degiro
+from . import easyride
 from . import finpension
 from . import ib
 from . import gmail
@@ -153,6 +154,17 @@ def pull_degiro_portfolio_helper(driver: webdriver.remote.webdriver.WebDriver,
 
 @cli.command()
 @click.pass_context
+def pull_easyride_receipts(ctx) -> None:
+    """Fetches EasyRide receipt PDFs."""
+    config = ctx.obj['config']
+    easyride.fetch_and_archive_receipts(
+        extract_gmail_credentials(config),
+        PurePath(config['download_directory']),
+    )
+
+
+@cli.command()
+@click.pass_context
 def pull_finpension(ctx) -> None:
     """Fetches Finpension transactions into a CSV file."""
     config = read_config_from_context(ctx)
@@ -208,8 +220,13 @@ def pull_all(ctx) -> None:
     """Fetches data from all implemented sources."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
+    gmail_creds = extract_gmail_credentials(config)
     coop.fetch_and_archive_receipts(
-        extract_gmail_credentials(config),
+        gmail_creds,
+        download_directory,
+    )
+    easyride.fetch_and_archive_receipts(
+        gmail_creds,
         download_directory,
     )
     with webdriverwire.Firefox() as driver:
