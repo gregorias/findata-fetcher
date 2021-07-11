@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""This module implements useful gmail functionality."""
+"""This module implements useful Gmail functionality."""
 import email
 from email.header import decode_header
 from imaplib import IMAP4, IMAP4_SSL
