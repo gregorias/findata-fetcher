@@ -9,7 +9,7 @@ from . import gmail
 
 
 def get_receipt_mail_numbers(imap: IMAP4) -> List[bytes]:
-    ret = gmail.search_for_inbox_mails(imap, "EasyRide")
+    ret = gmail.search_for_inbox_mails(imap, "EasyRide Kaufquittung")
     if ret is None:
         raise Exception("Could not search for EasyRide receipts.")
     return ret
