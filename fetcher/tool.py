@@ -24,6 +24,7 @@ from . import finpension
 from . import ib
 from . import gmail
 from . import mbank
+from . import patreon
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
 
@@ -212,6 +213,17 @@ def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
     with open(download_directory / 'mbank.csv', 'wb') as f:
         f.write(
             mbank.fetch_mbank_data(driver, extract_mbank_credentials(config)))
+
+
+@cli.command()
+@click.pass_context
+def pull_patreon(ctx) -> None:
+    """Fetches Patreon receipts in text format."""
+    config = ctx.obj['config']
+    patreon.fetch_and_archive_receipts(
+        extract_gmail_credentials(config),
+        PurePath(config['download_directory']),
+    )
 
 
 @cli.command()
