@@ -5,10 +5,13 @@ Fetch my accounting data into a CSV file.
 Usage: python -m fetcher.tool --help
 """
 
+from contextlib import contextmanager
 import functools
 import json
 import logging
 from pathlib import PurePath
+import tempfile
+import shutil
 
 from selenium import webdriver  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
@@ -27,6 +30,18 @@ from . import mbank
 from . import patreon
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
+
+
+@contextmanager
+def open_and_save_on_success(file, mode):
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, mode=mode) as f:
+            yield f
+            fn = f.name
+    except:
+        raise
+    else:
+        shutil.move(fn, file)
 
 
 @click.group()
@@ -65,7 +80,7 @@ def pull_bcge(ctx) -> None:
 
 def pull_bcge_helper(driver: webdriver.remote.webdriver.WebDriver,
                      download_directory: PurePath, config: dict) -> None:
-    with open(download_directory / 'bcge.csv', 'wb') as f:
+    with open_and_save_on_success(download_directory / 'bcge.csv', 'wb') as f:
         f.write(bcge.fetch_bcge_data(driver, extract_bcge_credentials(config)))
 
 
@@ -81,7 +96,8 @@ def pull_bcgecc(ctx) -> None:
 
 def pull_bcgecc_helper(driver: webdriver.remote.webdriver.WebDriver,
                        download_directory: PurePath, config: dict) -> None:
-    with open(download_directory / 'bcgecc.pdf', 'wb') as f:
+    with open_and_save_on_success(download_directory / 'bcgecc.pdf',
+                                  'wb') as f:
         f.write(bcgecc.fetch_data(extract_bcgecc_credentials(config), driver))
 
 
@@ -109,7 +125,7 @@ def pull_cs_account_history(ctx) -> None:
 def pull_cs_account_history_helper(
         driver: webdriver.remote.webdriver.WebDriver,
         download_directory: PurePath, config: dict) -> None:
-    with open(download_directory / 'cs.csv', 'wb') as f:
+    with open_and_save_on_success(download_directory / 'cs.csv', 'wb') as f:
         f.write(
             cs.fetch_account_history(driver, extract_cs_credentials(config)))
 
@@ -128,7 +144,8 @@ def pull_degiro_account(ctx) -> None:
 def pull_degiro_account_statement_helper(
         driver: webdriver.remote.webdriver.WebDriver,
         download_directory: PurePath, config: dict) -> None:
-    with open(download_directory / 'degiro-account.csv', 'wb') as f:
+    with open_and_save_on_success(download_directory / 'degiro-account.csv',
+                                  'wb') as f:
         f.write(
             degiro.fetch_account_statement(driver,
                                            extract_degiro_credentials(config)))
@@ -147,7 +164,8 @@ def pull_degiro_portfolio(ctx) -> None:
 def pull_degiro_portfolio_helper(driver: webdriver.remote.webdriver.WebDriver,
                                  download_directory: PurePath,
                                  config: dict) -> None:
-    with open(download_directory / 'degiro-portfolio.csv', 'wb') as f:
+    with open_and_save_on_success(download_directory / 'degiro-portfolio.csv',
+                                  'wb') as f:
         f.write(
             degiro.fetch_portfolio_statement(
                 driver, extract_degiro_credentials(config)))
@@ -176,7 +194,8 @@ def pull_finpension(ctx) -> None:
 
 def pull_finpension_helper(driver: webdriver.remote.webdriver.WebDriver,
                            download_directory: PurePath, config: dict) -> None:
-    with open(download_directory / 'finpension.csv', 'wb') as f:
+    with open_and_save_on_success(download_directory / 'finpension.csv',
+                                  'wb') as f:
         f.write(
             finpension.fetch_data(extract_finpension_credentials(config),
                                   extract_gmail_credentials(config), driver))
@@ -194,7 +213,7 @@ def pull_ib(ctx) -> None:
 
 def pull_ib_helper(driver: webdriver.remote.webdriver.WebDriver,
                    download_directory: PurePath, config: dict) -> None:
-    with open(download_directory / 'ib.csv', 'wb') as f:
+    with open_and_save_on_success(download_directory / 'ib.csv', 'wb') as f:
         f.write(ib.fetch_data(driver, extract_ib_credentials(config)))
 
 
@@ -210,7 +229,7 @@ def pull_mbank(ctx) -> None:
 
 def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
                       download_directory: PurePath, config: dict) -> None:
-    with open(download_directory / 'mbank.csv', 'wb') as f:
+    with open_and_save_on_success(download_directory / 'mbank.csv', 'wb') as f:
         f.write(
             mbank.fetch_mbank_data(driver, extract_mbank_credentials(config)))
 

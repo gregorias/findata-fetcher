@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
 import time
 from typing import NamedTuple
 
@@ -52,6 +53,15 @@ def mail_transactions(driver: webdriver.remote.webdriver.WebDriver) -> None:
     mail_the_csv_button.click()
 
 
+def retry_n_times(f, count=10, delay=timedelta(seconds=5)):
+    for i in range(count - 1):
+        try:
+            return f()
+        except:
+            time.sleep(delay.total_seconds())
+    return f()
+
+
 def fetch_csv_from_gmail(creds: gmail.Credentials) -> bytes:
     with gmail.connect(creds) as imap:
         for i in range(10):
@@ -81,4 +91,4 @@ def fetch_data(creds: Credentials, gmail_creds: gmail.Credentials,
     wait_for_login(driver)
     time.sleep(2)
     mail_transactions(driver)
-    return fetch_csv_from_gmail(gmail_creds)
+    return retry_n_times(lambda: fetch_csv_from_gmail(gmail_creds))
