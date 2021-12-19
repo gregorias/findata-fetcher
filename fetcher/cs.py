@@ -49,11 +49,12 @@ def login(creds: Credentials,
     LOGIN_PAGE = 'https://client.schwab.com/Login/SignOn/CustomerCenterLogin.aspx'
     driver.get(LOGIN_PAGE)
     driver.switch_to.frame("lmsSecondaryLogin")
-    login_id = driver.find_element(By.ID, "LoginId")
+    login_id = driver.find_element(By.ID, "loginIdInput")
     wait = WebDriverWait(driver, 30)
     wait.until(expected_conditions.visibility_of(login_id))
     login_id.send_keys(creds.id + Keys.TAB)
-    driver.find_element(By.ID, "Password").send_keys(creds.pwd + Keys.RETURN)
+    driver.find_element(By.ID,
+                        "passwordInput").send_keys(creds.pwd + Keys.RETURN)
     wait_for_pin_number_and_select_it(wait, driver)
     wait_for_user_to_provide_pin_and_login(driver)
 
