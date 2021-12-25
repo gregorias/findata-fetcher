@@ -22,9 +22,10 @@ class Credentials(NamedTuple):
 
 def wait_for_pin_number_and_select_it(
         wait: WebDriverWait, driver: webdriver.remote.webdriver.WebDriver):
-    wait.until(expected_conditions.url_matches('https://lms.schwab.com/.*'))
+    wait.until(
+        expected_conditions.url_matches('https://sws-gateway.schwab.com/.*'))
     driver.switch_to.window(driver.window_handles[0])
-    pin_element = driver.find_element(By.ID, "PinNumber")
+    pin_element = driver.find_element(By.ID, "placeholderCode")
     # Initially the element is findable but not clickable. When that happens,
     # the click operation fails, so wait for the element to be visible.
     wait.until(expected_conditions.visibility_of(pin_element))
