@@ -39,7 +39,8 @@ def get_account_id(driver: webdriver.remote.webdriver.WebDriver) -> str:
     try:
         # We want the page to load fully. Otherwise it seems that statement
         # fetching doesn't work. That's why we wait for the export icon to
-        # appear, because it appears relatively late in the loading process.
+        # appear and some currency figures, because they appear relatively late
+        # in the loading process.
         wait.until(
             expected_conditions.presence_of_element_located(
                 (By.CSS_SELECTOR,
@@ -47,6 +48,9 @@ def get_account_id(driver: webdriver.remote.webdriver.WebDriver) -> str:
         wait.until(
             expected_conditions.presence_of_element_located(
                 (By.CSS_SELECTOR, 'a.ribbon')))
+        wait.until(
+            expected_conditions.presence_of_element_located(
+                (By.CSS_SELECTOR, '.currency')))
         ribbons = driver.find_elements(By.CSS_SELECTOR, 'a.ribbon')
         elem_with_account_id = ribbons[0]
         params = json.loads(
