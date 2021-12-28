@@ -28,6 +28,7 @@ from . import ib
 from . import gmail
 from . import mbank
 from . import patreon
+from . import revolut
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
 
@@ -236,6 +237,22 @@ def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
 
 @cli.command()
 @click.pass_context
+def pull_revolut(ctx) -> None:
+    """Fetches Revolut data into CSV files."""
+    config = read_config_from_context(ctx)
+    download_directory = PurePath(config['download_directory'])
+    with webdriver.Firefox() as driver:
+        pull_revolut_helper(driver, download_directory, config)
+
+
+def pull_revolut_helper(driver: webdriver.remote.webdriver.WebDriver,
+                        download_directory: PurePath, config: dict) -> None:
+    creds = extract_revolut_credentials(config)
+    raise Exception("pull-revolut is not yet implemented.")
+
+
+@cli.command()
+@click.pass_context
 def pull_patreon(ctx) -> None:
     """Fetches Patreon receipts in text format."""
     config = ctx.obj['config']
@@ -270,6 +287,7 @@ def pull_all(ctx) -> None:
                                              config)
         pull_degiro_portfolio_helper(driver, download_directory, config)
         pull_mbank_helper(driver, download_directory, config)
+        pull_revolut_helper(driver, download_directory, config)
 
 
 def extract_bcge_credentials(config: dict) -> bcge.Credentials:
@@ -303,6 +321,12 @@ def extract_gmail_credentials(config: dict) -> gmail.Credentials:
 
 def extract_mbank_credentials(config: dict) -> mbank.Credentials:
     return mbank.Credentials(id=config['mbank_id'], pwd=config['mbank_pwd'])
+
+
+def extract_revolut_credentials(config: dict) -> revolut.Credentials:
+    return revolut.Credentials(country_code=config['revolut_country_code'],
+                               phone_number=config['revolut_phone_number'],
+                               pin=config['revolut_pin'])
 
 
 if __name__ == '__main__':

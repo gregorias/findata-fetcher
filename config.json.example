@@ -26,6 +26,10 @@
   "mbank_id": "12345678",
   "mbank_pwd": "hunter2",
 
+  "revolut_country_code": "+1",
+  "revolut_phone_number": "123456789",
+  "revolut_pin": "1234",
+
   "tw_id": "email@gmail.com",
   "tw_pwd": "hunter2"
 }
