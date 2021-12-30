@@ -15,8 +15,9 @@ from fetcher import cs
 from fetcher import coop
 from fetcher import degiro
 from fetcher import finpension
-from fetcher import ib
 from fetcher import gmail
+from fetcher import ib
+from fetcher import revolut
 
 with open('config.json', 'r') as cf:
     config = json.load(cf)
@@ -27,6 +28,7 @@ with open('config.json', 'r') as cf:
     finpension_creds = t.extract_finpension_credentials(config)
     gmail_creds = t.extract_gmail_credentials(config)
     ib_creds = t.extract_ib_credentials(config)
+    revolut_creds = t.extract_revolut_credentials(config)
 
 
 def start_driver():
