@@ -29,6 +29,7 @@ from . import gmail
 from . import mbank
 from . import patreon
 from . import revolut
+from . import revolut_mail
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
 
@@ -243,6 +244,17 @@ def pull_revolut(ctx) -> None:
     download_directory = PurePath(config['download_directory'])
     with webdriver.Firefox() as driver:
         pull_revolut_helper(driver, download_directory, config)
+
+
+@cli.command()
+@click.pass_context
+def pull_revolut_mail(ctx) -> None:
+    """Fetches Revolut statements shared through gmail."""
+    config = ctx.obj['config']
+    revolut_mail.fetch_and_archive_statements(
+        extract_gmail_credentials(config),
+        PurePath(config['download_directory']),
+    )
 
 
 def pull_revolut_helper(driver: webdriver.remote.webdriver.WebDriver,

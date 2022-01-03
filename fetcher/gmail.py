@@ -18,6 +18,13 @@ def connect(creds: Credentials) -> IMAP4_SSL:
     return imap
 
 
+def get_all_inbox_mails(imap: IMAP4) -> Optional[List[bytes]]:
+    ret = imap.search(None, 'ALL')
+    if ret[0] != 'OK':
+        return None
+    return ret[1][0].split()
+
+
 def search_for_inbox_mails(imap: IMAP4, subject: str) -> Optional[List[bytes]]:
     ret = imap.search(None, 'SUBJECT "{subject}"'.format(subject=subject))
     if ret[0] != 'OK':

@@ -18,6 +18,7 @@ from fetcher import finpension
 from fetcher import gmail
 from fetcher import ib
 from fetcher import revolut
+from fetcher import revolut_mail
 
 with open('config.json', 'r') as cf:
     config = json.load(cf)
