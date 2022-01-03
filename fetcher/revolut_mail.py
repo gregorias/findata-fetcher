@@ -26,7 +26,7 @@ def get_revolut_statement_part(
 def get_revolut_mail_numbers(imap: IMAP4) -> List[bytes]:
     """Returns mail numbers containing a Revolut statement."""
     all_emails = gmail.get_all_inbox_mails(imap)
-    if not all_emails:
+    if all_emails is None:
         raise Exception("Could not fetch the email list from gMail.")
     revolut_emails = []
     for email_no in all_emails:
