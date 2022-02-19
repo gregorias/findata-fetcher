@@ -2,7 +2,7 @@
 """Fetches account statement from Degiro"""
 from datetime import date, timedelta
 import time
-from typing import NamedTuple
+from typing import NamedTuple, Tuple
 import logging
 
 from selenium import webdriver  # type: ignore
@@ -33,7 +33,7 @@ def wait_for_login(driver: webdriver.remote.webdriver.WebDriver):
     logging.info("Waiting for login.")
     wait = WebDriverWait(driver, 30)
     wait.until(
-        expected_conditions.url_to_be(
+        expected_conditions.url_matches(
             'https://trader.degiro.nl/trader/#/markets'))
 
 
@@ -75,7 +75,7 @@ def fetch_account(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     exportButton = driver.find_element(By.CSS_SELECTOR,
                                        '[data-name="exportButton"]')
     exportButton.click()
-    time.sleep(1)
+    time.sleep(2)
     reportExportForm = driver.find_element(By.CSS_SELECTOR,
                                            '[data-name="reportExportForm"]')
     csvLink = reportExportForm.find_element(
@@ -93,7 +93,7 @@ def fetch_portfolio(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     exportButton = driver.find_element(By.CSS_SELECTOR,
                                        '[data-name="exportButton"]')
     exportButton.click()
-    time.sleep(1)
+    time.sleep(2)
     reportExportForm = driver.find_element(By.CSS_SELECTOR,
                                            '[data-name="reportExportForm"]')
     csvLink = reportExportForm.find_element(
@@ -127,3 +127,18 @@ def fetch_portfolio_statement(driver: webdriver.remote.webdriver.WebDriver,
     login(creds, driver)
     wait_for_login(driver)
     return fetch_portfolio(driver)
+
+
+def fetch_all(driver: webdriver.remote.webdriver.WebDriver,
+              creds: Credentials) -> Tuple[bytes, bytes]:
+    """Fetches Degiro's account & portfolio statements using Selenium
+
+    Returns:
+        A CSV UTF-8 encoded statement.
+    """
+    driver.implicitly_wait(30)
+    login(creds, driver)
+    wait_for_login(driver)
+    portfolio_stmt = fetch_portfolio(driver)
+    account_stmt = fetch_account(driver)
+    return (account_stmt, portfolio_stmt)
