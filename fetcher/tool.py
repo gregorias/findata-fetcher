@@ -30,6 +30,7 @@ from . import mbank
 from . import patreon
 from . import revolut
 from . import revolut_mail
+from . import splitwise
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
 
@@ -359,6 +360,13 @@ def extract_revolut_credentials(config: dict) -> revolut.Credentials:
     return revolut.Credentials(country_code=config['revolut_country_code'],
                                phone_number=config['revolut_phone_number'],
                                pin=config['revolut_pin'])
+
+
+def extract_splitwise_credentials(config: dict) -> splitwise.Credentials:
+    return splitwise.Credentials(
+        consumer_key=config['splitwise_consumer_key'],
+        consumer_secret=config['splitwise_consumer_secret'],
+        api_key=config['splitwise_api_key'])
 
 
 if __name__ == '__main__':

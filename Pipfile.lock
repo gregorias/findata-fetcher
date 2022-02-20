@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d8b58a4a26c8eb402eb431498a795465b7fe9e73bf22336664f5390901120764"
+            "sha256": "2610635f77f64a7a2ccf037b311460bde24fddeb43b6899600b36c5cae4816e1"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -258,6 +258,14 @@
             ],
             "version": "==0.9"
         },
+        "oauthlib": {
+            "hashes": [
+                "sha256:23a8208d75b902797ea29fd31fa80a15ed9dc2c6c16fe73f5d346f83f6fa27a2",
+                "sha256:6db33440354787f9b7f3a6dbd4febf5d0f93758354060e802f6c06cb493022fe"
+            ],
+            "markers": "python_version >= '3.6'",
+            "version": "==3.2.0"
+        },
         "outcome": {
             "hashes": [
                 "sha256:c7dd9375cfd3c12db9801d080a3b63d4b0a261aa996c4c13152380587288d958",
@@ -338,6 +346,14 @@
             ],
             "version": "==2.25.1"
         },
+        "requests-oauthlib": {
+            "hashes": [
+                "sha256:2577c501a2fb8d05a304c09d090d6e47c306fef15809d102b327cf8364bddab5",
+                "sha256:75beac4a47881eeb94d5ea5d6ad31ef88856affe2332b9aafb52c6452ccf0d7a"
+            ],
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+            "version": "==1.3.1"
+        },
         "selenium": {
             "hashes": [
                 "sha256:27e7b64df961d609f3d57237caa0df123abbbe22d038f2ec9e332fb90ec1a939"
@@ -373,6 +389,13 @@
                 "sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0"
             ],
             "version": "==2.4.0"
+        },
+        "splitwise": {
+            "hashes": [
+                "sha256:3fddce6dbcd898fbcee3f943c7cc8df73431ba1d30b5f1461b91d31f8f549429",
+                "sha256:af5cd24d94875649a8e559067ad8d79bdae0f86bc306de9208a78e6de2561c97"
+            ],
+            "version": "==2.3.0"
         },
         "trio": {
             "hashes": [

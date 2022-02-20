@@ -9,6 +9,7 @@ pyuserinput = "*"
 requests = "==2.25.*"
 selenium = ">=3.141.0"
 selenium-wire = "*"
+splitwise = "*"
 
 [dev-packages]
 bpython = "*"

@@ -30,6 +30,10 @@
   "revolut_phone_number": "123456789",
   "revolut_pin": "1234",
 
+  "splitwise_consumer_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "splitwise_consumer_secret": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "splitwise_api_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+
   "tw_id": "email@gmail.com",
   "tw_pwd": "hunter2"
 }
