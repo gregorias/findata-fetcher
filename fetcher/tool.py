@@ -280,6 +280,18 @@ def pull_revolut_mail(ctx) -> None:
     )
 
 
+@cli.command()
+@click.pass_context
+def pull_splitwise(ctx) -> None:
+    """Fetches the Splitwise statement."""
+    config = ctx.obj['config']
+    bs = splitwise.fetch_balances(extract_splitwise_credentials(config))
+    csv = splitwise.export_balances(bs)
+    download_directory = PurePath(config['download_directory'])
+    with open(download_directory / 'splitwise.csv', 'wb') as f:
+        f.write(csv)
+
+
 def pull_revolut_helper(driver: webdriver.remote.webdriver.WebDriver,
                         download_directory: PurePath, config: dict) -> None:
     creds = extract_revolut_credentials(config)
