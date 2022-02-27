@@ -7,7 +7,7 @@ CurrencyConverter = ">=0.14.1"
 click = "==8.0.*"
 pyuserinput = "*"
 requests = "==2.25.*"
-selenium = ">=3.141.0"
+selenium = ">=4.1"
 selenium-wire = "*"
 splitwise = "*"
 

@@ -6,12 +6,12 @@ import json
 import logging
 from typing import Dict, NamedTuple, Optional
 
-from selenium import webdriver  # type: ignore
+from selenium import webdriver
 from seleniumwire import request  # type: ignore
-from selenium.webdriver.common.by import By  # type: ignore
-from selenium.webdriver.common.keys import Keys  # type: ignore
-from selenium.webdriver.support import expected_conditions  # type: ignore
-from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.ui import WebDriverWait
 import requests
 
 from .dateutils import yesterday
@@ -62,9 +62,7 @@ def decode_account_statement_fetch_response_content(
         json.loads(response_content)['fileContent'].encode('ascii'))
 
 
-def get_last_get_request(
-        driver: webdriver.remote.webdriver.WebDriver
-) -> Optional[request.Request]:
+def get_last_get_request(driver) -> Optional[request.Request]:
     """Returns the last GET request made in this session.
 
     This GET request can be useful to fetch headers used by the IB app.

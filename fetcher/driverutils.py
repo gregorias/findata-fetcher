@@ -1,8 +1,9 @@
 """A collection of data processing utilities for interaction with websites"""
 import datetime
+from typing import Dict, List
 
-from selenium import webdriver  # type: ignore
-from selenium.webdriver.common.by import By  # type: ignore
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 
 
 def format_date(date: datetime.date) -> str:
@@ -29,7 +30,7 @@ def get_next_element_sibling(driver: webdriver.remote.webdriver.WebDriver,
                                  elem)
 
 
-def driver_cookie_jar_to_requests_cookies(driver_cookies: dict) -> dict:
+def driver_cookie_jar_to_requests_cookies(driver_cookies: List[Dict]) -> Dict:
     return {c['name']: c['value'] for c in driver_cookies}
 
 
