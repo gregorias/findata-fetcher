@@ -21,6 +21,7 @@ from fetcher import ib
 from fetcher import revolut
 from fetcher import revolut_mail
 from fetcher import splitwise
+from fetcher import ubereats
 
 with open('config.json', 'r') as cf:
     config = json.load(cf)

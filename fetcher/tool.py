@@ -31,6 +31,7 @@ from . import patreon
 from . import revolut
 from . import revolut_mail
 from . import splitwise
+from . import ubereats
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
 
@@ -307,6 +308,18 @@ def pull_patreon(ctx) -> None:
         extract_gmail_credentials(config),
         PurePath(config['download_directory']),
     )
+
+
+@cli.command()
+@click.pass_context
+def pull_uber_eats(ctx) -> None:
+    """Fetches Uber Eats receipts in text format."""
+    config = ctx.obj['config']
+    download_dir = PurePath(config['download_directory'])
+    for (title, content) in ubereats.fetch_and_archive_bills(
+            extract_gmail_credentials(config)):
+        with open(download_dir / (title + '.ubereats'), 'w') as f:
+            f.write(content)
 
 
 @cli.command()
