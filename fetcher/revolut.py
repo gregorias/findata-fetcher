@@ -2,9 +2,9 @@
 """Fetches account statements from Revolut"""
 from typing import NamedTuple
 
-from selenium import webdriver  # type: ignore
-from selenium.webdriver.common.by import By  # type: ignore
-from selenium.webdriver.common.keys import Keys  # type: ignore
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 
 from .driverutils import get_next_element_sibling, get_parent, set_value
 
