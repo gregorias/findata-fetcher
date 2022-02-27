@@ -1,6 +1,7 @@
 # A dev pythonrc module.
 # I use this module for interactive debugging. It is automatically loaded
 # in my (b)python setup and provides convenient bindings.
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from seleniumwire import webdriver as webdriverwire
 import email

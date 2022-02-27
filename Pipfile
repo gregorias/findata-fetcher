@@ -3,6 +3,7 @@ url = "https://pypi.python.org/simple"
 verify_ssl = true
 
 [packages]
+beautifulsoup4 = ">=4.10"
 CurrencyConverter = ">=0.14.1"
 click = "==8.0.*"
 pyuserinput = "*"
