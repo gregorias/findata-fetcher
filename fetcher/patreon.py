@@ -9,13 +9,6 @@ from typing import List
 from . import gmail
 
 
-def get_receipt_mail_numbers(imap: IMAP4) -> List[bytes]:
-    ret = gmail.search_for_inbox_mails(imap, "Your Patreon receipt is here")
-    if ret is None:
-        raise Exception("Could not search for Patreon receipts.")
-    return ret
-
-
 def get_text_payload(msg: email.message.Message) -> str:
     try:
         return list(msg.walk())[0].get_payload()[0].get_payload()
@@ -35,7 +28,8 @@ def save_file(content, target_dir: PurePath) -> None:
 def fetch_and_archive_receipts(creds: gmail.Credentials,
                                download_dir: PurePath) -> None:
     with gmail.connect(creds) as imap:
-        receipt_mail_numbers = get_receipt_mail_numbers(imap)
+        receipt_mail_numbers = gmail.search_for_inbox_mails(
+            imap, "Your Patreon receipt is here")
         for receipt_mail_number in receipt_mail_numbers:
             msg = gmail.fetch_mail(imap, receipt_mail_number)
             payload = get_text_payload(msg)
