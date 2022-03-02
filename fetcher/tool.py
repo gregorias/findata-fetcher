@@ -24,6 +24,7 @@ from . import cs
 from . import degiro
 from . import easyride
 from . import finpension
+from . import galaxus
 from . import ib
 from . import gmail
 from . import mbank
@@ -297,6 +298,18 @@ def pull_revolut_helper(driver: webdriver.remote.webdriver.WebDriver,
                         download_directory: PurePath, config: dict) -> None:
     creds = extract_revolut_credentials(config)
     raise Exception("pull-revolut is not yet implemented.")
+
+
+@cli.command()
+@click.pass_context
+def pull_galaxus(ctx) -> None:
+    """Fetches Digitec-Galaxus receipts in text format."""
+    config = ctx.obj['config']
+    download_dir = PurePath(config['download_directory'])
+    for (title, content) in galaxus.fetch_and_archive_bills(
+            extract_gmail_credentials(config)):
+        with open(download_dir / (title + '.galaxus'), 'w') as f:
+            f.write(content)
 
 
 @cli.command()
