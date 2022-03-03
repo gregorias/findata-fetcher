@@ -16,6 +16,7 @@ from fetcher import cs
 from fetcher import coop
 from fetcher import degiro
 from fetcher import finpension
+from fetcher import galaxus
 from fetcher import gmail
 from fetcher import ib
 from fetcher import revolut
