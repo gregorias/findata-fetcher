@@ -32,7 +32,7 @@ def search_for_inbox_mails(imap: IMAP4, subject: str) -> List[bytes]:
     return ret[1][0].split()
 
 
-def fetch_mail(imap: IMAP4, num):
+def fetch_mail(imap: IMAP4, num) -> email.message.Message:
     typ, data = imap.fetch(num, '(RFC822)')
     if typ != 'OK':
         raise Exception('Could not fetch the specified mail')
@@ -40,8 +40,7 @@ def fetch_mail(imap: IMAP4, num):
     if raw_email is None or isinstance(raw_email, bytes):
         raise Exception('I expected raw_email part to be a tuple.'
                         ' Rewrite your fetching code.')
-    msg = email.message_from_bytes(raw_email[1])
-    return msg
+    return email.message_from_bytes(raw_email[1])
 
 
 def fetch_file(file_part) -> Tuple[str, bytes]:
