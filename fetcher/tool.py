@@ -305,11 +305,9 @@ def pull_revolut_helper(driver: webdriver.remote.webdriver.WebDriver,
 def pull_galaxus(ctx) -> None:
     """Fetches Digitec-Galaxus receipts in text format."""
     config = ctx.obj['config']
-    download_dir = PurePath(config['download_directory'])
-    for (title, content) in galaxus.fetch_and_archive_bills(
+    for content in galaxus.fetch_and_archive_bills(
             extract_gmail_credentials(config)):
-        with open(download_dir / (title + '.galaxus'), 'w') as f:
-            f.write(content)
+        print(content)
 
 
 @cli.command()
