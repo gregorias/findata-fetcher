@@ -7,6 +7,7 @@ from typing import Generator, Tuple
 import quopri
 
 from . import gmail
+from .emailutils import decoded_header_to_str
 
 
 def search_for_inbox_mails(imap: IMAP4) -> Generator:
@@ -14,7 +15,7 @@ def search_for_inbox_mails(imap: IMAP4) -> Generator:
     for receipt_mail_number in receipt_mail_numbers:
         msg = gmail.fetch_mail(imap, receipt_mail_number)
         from_field = msg['From']
-        if not ('Galaxus' in from_field or 'Digitec' in from_field):
+        if not ('Galaxus' in from_field or 'digitec' in from_field):
             continue
         if 'Danke =?UTF-8?B?ZsO8cg==?= deine Bestellung' in msg['Subject']:
             yield (receipt_mail_number, msg)
@@ -26,7 +27,10 @@ def get_payload(msg: email.message.Message) -> str:
 
 
 def fetch_and_archive_bills(
-        creds: gmail.Credentials) -> Generator[str, None, None]:
+        creds: gmail.Credentials) -> Generator[Tuple[str, str], None, None]:
     with gmail.connect(creds) as imap:
         for (msg_no, msg) in search_for_inbox_mails(imap):
-            yield get_payload(msg)
+            subject = decoded_header_to_str(
+                email.header.decode_header(msg['Subject']))
+            yield (subject, get_payload(msg))
+            gmail.archive_mail(imap, msg_no)
