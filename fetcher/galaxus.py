@@ -32,5 +32,6 @@ def fetch_and_archive_bills(
         for (msg_no, msg) in search_for_inbox_mails(imap):
             subject = decoded_header_to_str(
                 email.header.decode_header(msg['Subject']))
-            yield (subject, get_payload(msg))
+            date_line = msg['Date'] + '\n'
+            yield (subject, date_line + get_payload(msg))
             gmail.archive_mail(imap, msg_no)
