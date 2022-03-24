@@ -407,5 +407,9 @@ def extract_splitwise_credentials(config: dict) -> splitwise.Credentials:
         api_key=config['splitwise_api_key'])
 
 
-if __name__ == '__main__':
+def main():
     cli(obj={})
+
+
+if __name__ == '__main__':
+    main()
