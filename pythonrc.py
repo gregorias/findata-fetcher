@@ -1,9 +1,9 @@
 # A dev pythonrc module.
 # I use this module for interactive debugging. It is automatically loaded
 # in my (b)python setup and provides convenient bindings.
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # type: ignore
 from selenium import webdriver
-from seleniumwire import webdriver as webdriverwire
+from seleniumwire import webdriver as webdriverwire  # type: ignore
 import email
 import json
 import requests
@@ -12,8 +12,8 @@ import fetcher.tool as t
 from fetcher.driverutils import driver_cookie_jar_to_requests_cookies
 from fetcher import bcge
 from fetcher import bcgecc
+from fetcher import coop_mail
 from fetcher import cs
-from fetcher import coop
 from fetcher import degiro
 from fetcher import finpension
 from fetcher import galaxus
