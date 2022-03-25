@@ -15,7 +15,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 import requests
 
 from .dateutils import yesterday
-from .driverutils import driver_cookie_jar_to_requests_cookies
+from .driverutils import driver_cookie_jar_to_requests_cookies, set_value
 
 
 class Credentials(NamedTuple):
@@ -29,6 +29,10 @@ def login(creds: Credentials,
     driver.get(LOGIN_PAGE)
     driver.find_element(By.ID, "user_name").send_keys(creds.id + Keys.TAB)
     driver.find_element(By.ID, "password").send_keys(creds.pwd + Keys.RETURN)
+    secondFactorSelect = driver.find_element(By.ID, 'sf_select')
+    IB_KEY_OPTION_VALUE = '5.2a'
+    set_value(driver, secondFactorSelect, IB_KEY_OPTION_VALUE)
+    driver.execute_script('arguments[0].onchange()', secondFactorSelect)
 
 
 def wait_for_logged_in_state(
