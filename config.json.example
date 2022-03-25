@@ -34,6 +34,9 @@
   "splitwise_consumer_secret": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "splitwise_api_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 
+  "supercard_id": "email@gmail.com",
+  "supercard_pwd": "hunter2",
+
   "tw_id": "email@gmail.com",
   "tw_pwd": "hunter2"
 }

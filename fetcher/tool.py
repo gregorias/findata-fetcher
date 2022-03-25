@@ -6,6 +6,7 @@ Usage: python -m fetcher.tool --help
 """
 
 from contextlib import contextmanager
+import datetime
 import functools
 import json
 import logging
@@ -20,6 +21,7 @@ import click  # type: ignore
 from . import bcge
 from . import bcgecc
 from . import coop_mail
+from . import coop_supercard
 from . import cs
 from . import degiro
 from . import easyride
@@ -115,6 +117,15 @@ def pull_coop_receipts(ctx) -> None:
         extract_gmail_credentials(config),
         PurePath(config['download_directory']),
     )
+
+
+@cli.command()
+@click.pass_context
+def pull_coop_supercard(ctx) -> None:
+    """Fetches Coop receipt PDFs from supercard.ch."""
+    config = ctx.obj['config']
+    coop_supercard.fetch_receipts(extract_supercard_credentials(config),
+                                  datetime.datetime.now())
 
 
 @cli.command()
@@ -398,6 +409,11 @@ def extract_revolut_credentials(config: dict) -> revolut.Credentials:
     return revolut.Credentials(country_code=config['revolut_country_code'],
                                phone_number=config['revolut_phone_number'],
                                pin=config['revolut_pin'])
+
+
+def extract_supercard_credentials(config: dict) -> coop_supercard.Credentials:
+    return coop_supercard.Credentials(id=config['supercard_id'],
+                                      pwd=config['supercard_pwd'])
 
 
 def extract_splitwise_credentials(config: dict) -> splitwise.Credentials:
