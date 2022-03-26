@@ -34,6 +34,7 @@ with open('config.json', 'r') as cf:
     gmail_creds = t.extract_gmail_credentials(config)
     ib_creds = t.extract_ib_credentials(config)
     revolut_creds = t.extract_revolut_credentials(config)
+    supercard_creds = t.extract_supercard_credentials(config)
     splitwise_creds = t.extract_splitwise_credentials(config)
 
 

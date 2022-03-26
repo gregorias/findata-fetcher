@@ -124,8 +124,10 @@ def pull_coop_receipts(ctx) -> None:
 def pull_coop_supercard(ctx) -> None:
     """Fetches Coop receipt PDFs from supercard.ch."""
     config = ctx.obj['config']
-    coop_supercard.fetch_receipts(extract_supercard_credentials(config),
-                                  datetime.datetime.now())
+    with webdriver.Firefox() as driver:
+        coop_supercard.fetch_receipts(driver,
+                                      extract_supercard_credentials(config),
+                                      datetime.datetime.now())
 
 
 @cli.command()
