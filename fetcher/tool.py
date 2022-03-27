@@ -127,7 +127,7 @@ def pull_coop_supercard(ctx) -> None:
     with webdriver.Firefox() as driver:
         coop_supercard.fetch_receipts(driver,
                                       extract_supercard_credentials(config),
-                                      datetime.datetime.now())
+                                      None)
 
 
 @cli.command()
