@@ -20,7 +20,6 @@ import click  # type: ignore
 
 from . import bcge
 from . import bcgecc
-from . import coop_mail
 from . import coop_supercard
 from . import cs
 from . import degiro
@@ -106,17 +105,6 @@ def pull_bcgecc_helper(driver: webdriver.remote.webdriver.WebDriver,
     with open_and_save_on_success(download_directory / 'bcgecc.pdf',
                                   'wb') as f:
         f.write(bcgecc.fetch_data(extract_bcgecc_credentials(config), driver))
-
-
-@cli.command()
-@click.pass_context
-def pull_coop_receipts(ctx) -> None:
-    """Fetches Coop receipt PDFs from Gmail."""
-    config = ctx.obj['config']
-    coop_mail.fetch_and_archive_receipts(
-        extract_gmail_credentials(config),
-        PurePath(config['download_directory']),
-    )
 
 
 @cli.command()
@@ -360,10 +348,6 @@ def pull_all(ctx) -> None:
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
     gmail_creds = extract_gmail_credentials(config)
-    coop_mail.fetch_and_archive_receipts(
-        gmail_creds,
-        download_directory,
-    )
     easyride.fetch_and_archive_receipts(
         gmail_creds,
         download_directory,
