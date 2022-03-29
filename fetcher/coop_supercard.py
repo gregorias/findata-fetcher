@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Fetches Coop receipts from supercard.ch."""
 from collections.abc import Generator
+from itertools import takewhile
 from typing import NamedTuple
 from urllib.parse import parse_qs, urlparse
 
@@ -31,27 +32,6 @@ def login(
     driver.find_element(By.ID, "password").send_keys(creds.pwd + Keys.RETURN)
 
 
-def partition(xs: list, condition) -> tuple[list, list]:
-    """Partitions a list by the first element that evaluates to True.
-
-    >>> partition([1, 2, 3], lambda x: x == 2)
-    ([1], [2, 3])
-
-    >>> partition([1, 2, 3], lambda x: x == 4)
-    ([1, 2, 3], [])
-    """
-    idx = None
-    for i, x in enumerate(xs):
-        if condition(x):
-            idx = i
-            break
-
-    if idx is None:
-        return (xs, [])
-    else:
-        return (xs[:idx], xs[idx:])
-
-
 def get_receipt_urls(
         driver: webdriver.remote.webdriver.WebDriver,  # type: ignore
         last_barcode: str | None) -> list[str]:
@@ -74,9 +54,9 @@ def get_receipt_urls(
     if last_barcode is None:
         return urls
 
-    new_urls, old_urls = partition(
-        urls, lambda u: extract_barcode(u) == last_barcode)
-    if len(old_urls) == 0:
+    new_urls = list(
+        takewhile(lambda u: extract_barcode(u) == last_barcode, urls))
+    if len(new_urls) == len(urls):
         raise Exception("Could not find a receipt with the provided barcode." +
                         " Aborting the function, because that is unexpected " +
                         "and something might be going wrong.")
@@ -109,4 +89,5 @@ def fetch_receipts(
         last_barcode: str | None) -> Generator[Receipt, None, None]:
     driver.implicitly_wait(30)
     login(driver, creds)
+    get_receipt_urls(driver, last_barcode)
     raise Exception("Unimplemented.")
