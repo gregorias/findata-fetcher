@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Fetches Coop receipts from supercard.ch."""
-from collections.abc import Generator
+from collections.abc import Iterator
 from itertools import takewhile
 from typing import NamedTuple
 from urllib.parse import parse_qs, urlparse
@@ -51,11 +51,14 @@ def get_receipt_urls(
     buttons = driver.find_elements(By.CLASS_NAME, "receipt-button")
     urls = [button_to_url(b) for b in buttons]
 
+    import pprint
+    pprint.pprint(urls)
+
     if last_barcode is None:
         return urls
 
     new_urls = list(
-        takewhile(lambda u: extract_barcode(u) == last_barcode, urls))
+        takewhile(lambda u: extract_barcode(u) != last_barcode, urls))
     if len(new_urls) == len(urls):
         raise Exception("Could not find a receipt with the provided barcode." +
                         " Aborting the function, because that is unexpected " +
@@ -71,23 +74,24 @@ def fetch_receipt(url) -> bytes:
     return response.content
 
 
-def extract_barcode(url: str) -> str | None:
+def extract_barcode(url: str) -> str:
     """Extracts barcode from a receipt_url.
 
     >>> extract_barcode('https://www.supercard.ch/bin/coop/kbk/kassenzettelpoc?barcode=9900240383725032200038351955&pdfType=receipt')
     '9900240383725032200038351955'
-
-    >>> extract_barcode('gibberish')
     """
     query_dict: dict[str, list] = parse_qs(urlparse(url)[4])
-    return query_dict.get('barcode', [None])[0]
+    barcode = query_dict.get('barcode', [None])[0]
+    if barcode is None:
+        raise Exception(f"Could not extract a barcode from {url}")
+    return barcode
 
 
 def fetch_receipts(
         driver: webdriver.remote.webdriver.WebDriver,  # type: ignore
         creds: Credentials,
-        last_barcode: str | None) -> Generator[Receipt, None, None]:
+        last_barcode: str | None) -> Iterator[Receipt]:
     driver.implicitly_wait(30)
     login(driver, creds)
-    get_receipt_urls(driver, last_barcode)
-    raise Exception("Unimplemented.")
+    for url in reversed(get_receipt_urls(driver, last_barcode)):
+        yield Receipt(barcode=extract_barcode(url), pdf=fetch_receipt(url))
