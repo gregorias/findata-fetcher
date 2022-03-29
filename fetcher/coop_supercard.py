@@ -55,9 +55,6 @@ def get_receipt_urls(
     buttons = driver.find_elements(By.CLASS_NAME, "receipt-button")
     urls = [button_to_url(b) for b in buttons]
 
-    import pprint
-    pprint.pprint(urls)
-
     if last_barcode is None:
         return urls
 
