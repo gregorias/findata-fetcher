@@ -6,6 +6,10 @@ import tempfile
 
 
 def atomic_write(f: pathlib.Path, content: bytes | str) -> None:
+    """Writes content to f atomically.
+
+    This function creates f if not present.
+    """
     mode = 'w' if isinstance(content, str) else 'wb'
     tmp_file = tempfile.NamedTemporaryFile(mode, delete=False)
     try:
