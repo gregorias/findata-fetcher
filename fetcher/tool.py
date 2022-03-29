@@ -10,7 +10,7 @@ import datetime
 import functools
 import json
 import logging
-from pathlib import PurePath
+from pathlib import Path, PurePath
 import tempfile
 import shutil
 
@@ -125,9 +125,12 @@ def pull_coop_supercard(ctx) -> None:
     """Fetches Coop receipt PDFs from supercard.ch."""
     config = ctx.obj['config']
     with webdriver.Firefox() as driver:
-        coop_supercard.fetch_receipts(driver,
-                                      extract_supercard_credentials(config),
-                                      None)
+        coop_supercard.fetch_and_save_receipts(
+            driver,
+            extract_supercard_credentials(config),
+            Path(config['supercard_last_barcode_file']),
+            Path(config['download_directory']),
+        )
 
 
 @cli.command()

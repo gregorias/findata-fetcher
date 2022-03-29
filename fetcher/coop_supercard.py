@@ -2,6 +2,8 @@
 """Fetches Coop receipts from supercard.ch."""
 from collections.abc import Iterator
 from itertools import takewhile
+import os
+import pathlib
 from typing import NamedTuple
 from urllib.parse import parse_qs, urlparse
 
@@ -11,6 +13,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
+
+from .fileutils import atomic_write
 
 
 class Credentials(NamedTuple):
@@ -91,7 +95,47 @@ def fetch_receipts(
         driver: webdriver.remote.webdriver.WebDriver,  # type: ignore
         creds: Credentials,
         last_barcode: str | None) -> Iterator[Receipt]:
+    """Fetches receipts from supercard.ch.
+
+    Returns:
+        Receipts newer than last_barcode in chronological order.
+    """
     driver.implicitly_wait(30)
     login(driver, creds)
     for url in reversed(get_receipt_urls(driver, last_barcode)):
         yield Receipt(barcode=extract_barcode(url), pdf=fetch_receipt(url))
+
+
+def load_last_barcode(path: pathlib.Path) -> str | None:
+    with open(path, 'r') as f:
+        content = f.read()
+    if len(content) == 0:
+        return None
+    return content.strip()
+
+
+def save_receipt(target_dir: pathlib.Path, last_barcode_filepath: pathlib.Path,
+                 receipt: Receipt) -> None:
+    target_pdf = target_dir / ("Coop " + receipt.barcode + ".pdf")
+    atomic_write(target_pdf, receipt.pdf)
+    try:
+        atomic_write(last_barcode_filepath, receipt.barcode)
+    except:
+        os.remove(target_pdf)
+        raise
+
+
+def fetch_and_save_receipts(
+        driver: webdriver.remote.webdriver.WebDriver,  # type: ignore
+        creds: Credentials,
+        last_barcode_filepath: pathlib.Path,
+        target_dir: pathlib.Path) -> None:
+    if not last_barcode_filepath.is_file():
+        raise Exception(
+            f"The provided last_barcode_filepath ({last_barcode_filepath})"
+            " is not present.")
+    last_barcode = load_last_barcode(last_barcode_filepath)
+    for receipt in fetch_receipts(driver, creds, last_barcode):
+        save_receipt(target_dir=target_dir,
+                     last_barcode_filepath=last_barcode_filepath,
+                     receipt=receipt)

@@ -36,6 +36,7 @@
 
   "supercard_id": "email@gmail.com",
   "supercard_pwd": "hunter2",
+  "supercard_last_barcode_file": "/home/user/last_barcode_file",
 
   "tw_id": "email@gmail.com",
   "tw_pwd": "hunter2"
