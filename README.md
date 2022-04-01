@@ -38,9 +38,17 @@ This section is meant for developers and provides instruction on how to work wit
 
 ### Dev Environment Setup
 
-The first time you start working with the repository, set up Pipenv:
+Set up Pipenv:
 
-    pipenv install
+    pipenv install --dev
+
+Set up npm:
+
+    npm install
+
+Install lefthook:
+
+    lefthook install
 
 Also install [direnv](https://direnv.net/) to benefit from some dev tools.
 
