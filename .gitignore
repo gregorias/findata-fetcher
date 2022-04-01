@@ -1,3 +1,5 @@
+node_modules
+
 # The default config file that may contain sensitive information.
 
 config.json
