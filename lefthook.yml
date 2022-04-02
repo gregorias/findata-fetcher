@@ -1,3 +1,7 @@
+pre-commit:
+  commands:
+    unit-tests:
+      run: "./dev/bin/testall"
 commit-msg:
   commands:
     commitlint:
