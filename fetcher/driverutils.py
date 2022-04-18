@@ -2,8 +2,8 @@
 import datetime
 from typing import Dict, List
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
+from selenium import webdriver  # type: ignore
+from selenium.webdriver.common.by import By  # type: ignore
 
 
 def format_date(date: datetime.date) -> str:
