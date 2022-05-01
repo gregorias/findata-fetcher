@@ -118,7 +118,7 @@ def pull_coop_supercard(ctx) -> None:
         coop_supercard.fetch_and_save_receipts(
             driver,
             extract_supercard_credentials(config),
-            Path(config['supercard_last_barcode_file']),
+            Path(config['supercard_last_bc_file']),
             Path(config['download_directory']),
         )
 
