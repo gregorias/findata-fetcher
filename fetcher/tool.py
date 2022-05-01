@@ -10,11 +10,13 @@ import datetime
 import functools
 import json
 import logging
+from os import path
 from pathlib import Path, PurePath
 import tempfile
 import shutil
 
 from selenium import webdriver  # type: ignore
+from selenium.webdriver.firefox.service import Service as FirefoxService  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
 import click  # type: ignore
 
@@ -36,6 +38,14 @@ from . import splitwise
 from . import ubereats
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
+
+
+def getFirefoxDriver(logging=False) -> webdriver.Firefox:
+    if logging:
+        return webdriver.Firefox()
+    else:
+        service = FirefoxService(log_path=path.devnull)
+        return webdriver.Firefox(service=service)
 
 
 @contextmanager
@@ -80,7 +90,7 @@ def pull_bcge(ctx) -> None:
     """Fetches BCGE data into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriver.Firefox() as driver:
+    with getFirefoxDriver() as driver:
         return pull_bcge_helper(driver, download_directory, config)
 
 
@@ -96,7 +106,7 @@ def pull_bcgecc(ctx) -> None:
     """Fetches BCGE CC data into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriver.Firefox() as driver:
+    with getFirefoxDriver() as driver:
         return pull_bcgecc_helper(driver, download_directory, config)
 
 
@@ -112,9 +122,10 @@ def pull_bcgecc_helper(driver: webdriver.remote.webdriver.WebDriver,
 def pull_coop_supercard(ctx) -> None:
     """Fetches Coop receipt PDFs from supercard.ch."""
     config = ctx.obj['config']
+    service = FirefoxService(log_path=path.devnull)
     opts = webdriver.FirefoxOptions()
     opts.headless = True
-    with webdriver.Firefox(options=opts) as driver:
+    with webdriver.Firefox(options=opts, service=service) as driver:
         coop_supercard.fetch_and_save_receipts(
             driver,
             extract_supercard_credentials(config),
@@ -129,7 +140,7 @@ def pull_cs_account_history(ctx) -> None:
     """Fetches Charles Schwab account history into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriver.Firefox() as driver:
+    with getFirefoxDriver() as driver:
         pull_cs_account_history_helper(driver, download_directory, config)
 
 
@@ -147,7 +158,7 @@ def pull_degiro_account(ctx) -> None:
     """Fetches Degiro's account statement into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriver.Firefox() as driver:
+    with getFirefoxDriver() as driver:
         pull_degiro_account_statement_helper(driver, download_directory,
                                              config)
 
@@ -168,7 +179,7 @@ def pull_degiro_portfolio(ctx) -> None:
     """Fetches Degiro's portfolio statement into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriver.Firefox() as driver:
+    with getFirefoxDriver() as driver:
         pull_degiro_portfolio_helper(driver, download_directory, config)
 
 
@@ -188,7 +199,7 @@ def pull_degiro(ctx) -> None:
     """Fetches Degiro's account and portfolio statements into CSV files."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriver.Firefox() as driver:
+    with getFirefoxDriver() as driver:
         pull_degiro_helper(driver, download_directory, config)
 
 
@@ -221,7 +232,7 @@ def pull_finpension(ctx) -> None:
     """Fetches Finpension transactions into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriver.Firefox() as driver:
+    with getFirefoxDriver() as driver:
         pull_finpension_helper(driver, download_directory, config)
 
 
@@ -240,7 +251,8 @@ def pull_ib(ctx) -> None:
     """Fetches Interactive Brokers into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriverwire.Firefox() as driver:
+    service = FirefoxService(log_path=path.devnull)
+    with webdriverwire.Firefox(service=service) as driver:
         pull_ib_helper(driver, download_directory, config)
 
 
@@ -256,7 +268,7 @@ def pull_mbank(ctx) -> None:
     """Fetches Mbank data into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriver.Firefox() as driver:
+    with getFirefoxDriver() as driver:
         pull_mbank_helper(driver, download_directory, config)
 
 
@@ -273,7 +285,7 @@ def pull_revolut(ctx) -> None:
     """Fetches Revolut data into CSV files."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with webdriver.Firefox() as driver:
+    with getFirefoxDriver() as driver:
         pull_revolut_helper(driver, download_directory, config)
 
 
@@ -354,7 +366,7 @@ def pull_all(ctx) -> None:
     )
     with webdriverwire.Firefox() as driver:
         pull_ib_helper(driver, download_directory, config)
-    with webdriver.Firefox() as driver:
+    with getFirefoxDriver() as driver:
         pull_bcge_helper(driver, download_directory, config)
         pull_bcgecc_helper(driver, download_directory, config)
         pull_cs_account_history_helper(driver, download_directory, config)
