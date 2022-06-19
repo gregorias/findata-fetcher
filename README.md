@@ -25,12 +25,12 @@ Currently implemented fetchers are:
    (geckodriver)](https://www.selenium.dev/documentation/en/selenium_installation/installing_webdriver_binaries/)
 2. Run
 
-    $ pip install --editable .
+    pip install --editable .
 
 ## Usage example
 
-    $ pipenv shell # If not already using pipenv
-    $ python -m fetcher.tool --help
+    pipenv shell # If not already using pipenv
+    python -m fetcher.tool --help
 
 ## Development notes
 
