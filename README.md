@@ -18,6 +18,7 @@ Currently implemented fetchers are:
 * Finpension's transaction report (through gmail)
 * Interactive Brokers' MTM summary statement
 * mBank's account statement
+* Splitwise's balance statement
 
 ## Installation
 
