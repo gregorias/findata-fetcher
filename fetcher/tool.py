@@ -14,6 +14,7 @@ from os import path
 from pathlib import Path, PurePath
 import tempfile
 import shutil
+import sys
 
 from selenium import webdriver  # type: ignore
 from selenium.webdriver.firefox.service import Service as FirefoxService  # type: ignore
@@ -307,9 +308,7 @@ def pull_splitwise(ctx) -> None:
     config = ctx.obj['config']
     creds = extract_splitwise_credentials(config)
     csv = splitwise.export_balances_to_csv(splitwise.fetch_balances(creds))
-    download_directory = PurePath(config['download_directory'])
-    with open(download_directory / 'splitwise.csv', 'wb') as f:
-        f.write(csv)
+    sys.stdout.buffer.write(csv)
 
 
 def pull_revolut_helper(driver: webdriver.remote.webdriver.WebDriver,
