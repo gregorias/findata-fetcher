@@ -305,8 +305,8 @@ def pull_revolut_mail(ctx) -> None:
 def pull_splitwise(ctx) -> None:
     """Fetches the Splitwise statement."""
     config = ctx.obj['config']
-    bs = splitwise.fetch_balances(extract_splitwise_credentials(config))
-    csv = splitwise.export_balances(bs)
+    creds = extract_splitwise_credentials(config)
+    csv = splitwise.export_balances_to_csv(splitwise.fetch_balances(creds))
     download_directory = PurePath(config['download_directory'])
     with open(download_directory / 'splitwise.csv', 'wb') as f:
         f.write(csv)

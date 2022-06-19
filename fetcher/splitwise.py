@@ -13,14 +13,19 @@ class Credentials(NamedTuple):
     api_key: str
 
 
-def fetch_balance(
-        friend: splitwise.Friend) -> Tuple[str, str, List[Tuple[str, str]]]:
-    return (friend.first_name, friend.last_name,
-            [(b.amount, b.currency_code) for b in friend.getBalances()])
+class Money(NamedTuple):
+    amount: str
+    currency_code: str
 
 
-def fetch_balances(
-        creds: Credentials) -> List[Tuple[str, str, Tuple[str, str]]]:
+def fetch_balance(friend: splitwise.Friend) -> Tuple[str, str, List[Money]]:
+    return (friend.first_name, friend.last_name, [
+        Money(amount=b.amount, currency_code=b.currency_code)
+        for b in friend.getBalances()
+    ])
+
+
+def fetch_balances(creds: Credentials) -> List[Tuple[str, str, Money]]:
     """Fetches Splitwise balance.
 
     Returns:
@@ -37,7 +42,7 @@ def fetch_balances(
     return balances
 
 
-def export_balances(bs: List[Tuple[str, str, Tuple[str, str]]]) -> bytes:
+def export_balances_to_csv(bs: List[Tuple[str, str, Money]]) -> bytes:
     """Exports balances to a CSV file."""
     with io.StringIO() as f:
         writer = csv.DictWriter(
@@ -45,11 +50,11 @@ def export_balances(bs: List[Tuple[str, str, Tuple[str, str]]]) -> bytes:
             fieldnames=["fname", "lname", "amount", "currency"],
             delimiter=',')
         writer.writeheader()
-        for (fn, ln, (amount, currency_code)) in bs:
+        for (fn, ln, money) in bs:
             writer.writerow({
                 'fname': fn,
                 "lname": ln,
-                "amount": amount,
-                "currency": currency_code
+                "amount": money.amount,
+                "currency": money.currency_code
             })
         return f.getvalue().encode('utf8')
