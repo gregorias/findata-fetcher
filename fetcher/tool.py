@@ -177,43 +177,12 @@ def pull_degiro_account_statement_helper(
 @cli.command()
 @click.pass_context
 def pull_degiro_portfolio(ctx) -> None:
-    """Fetches Degiro's portfolio statement into a CSV file."""
+    """Fetches Degiro's portfolio statement and outputs a CSV file."""
     config = read_config_from_context(ctx)
-    download_directory = PurePath(config['download_directory'])
     with getFirefoxDriver() as driver:
-        pull_degiro_portfolio_helper(driver, download_directory, config)
-
-
-def pull_degiro_portfolio_helper(driver: webdriver.remote.webdriver.WebDriver,
-                                 download_directory: PurePath,
-                                 config: dict) -> None:
-    with open_and_save_on_success(download_directory / 'degiro-portfolio.csv',
-                                  'wb') as f:
-        f.write(
+        sys.stdout.buffer.write(
             degiro.fetch_portfolio_statement(
                 driver, extract_degiro_credentials(config)))
-
-
-@cli.command()
-@click.pass_context
-def pull_degiro(ctx) -> None:
-    """Fetches Degiro's account and portfolio statements into CSV files."""
-    config = read_config_from_context(ctx)
-    download_directory = PurePath(config['download_directory'])
-    with getFirefoxDriver() as driver:
-        pull_degiro_helper(driver, download_directory, config)
-
-
-def pull_degiro_helper(driver: webdriver.remote.webdriver.WebDriver,
-                       download_directory: PurePath, config: dict) -> None:
-    with open_and_save_on_success(download_directory / 'degiro-portfolio.csv',
-                                  'wb') as p:
-        with open_and_save_on_success(
-                download_directory / 'degiro-account.csv', 'wb') as a:
-            (account_stmt, portfolio_stmt) = degiro.fetch_all(
-                driver, extract_degiro_credentials(config))
-            a.write(account_stmt)
-            p.write(portfolio_stmt)
 
 
 @cli.command()
@@ -369,7 +338,6 @@ def pull_all(ctx) -> None:
         pull_bcge_helper(driver, download_directory, config)
         pull_bcgecc_helper(driver, download_directory, config)
         pull_cs_account_history_helper(driver, download_directory, config)
-        pull_degiro_helper(driver, download_directory, config)
         pull_mbank_helper(driver, download_directory, config)
         pull_revolut_helper(driver, download_directory, config)
 
