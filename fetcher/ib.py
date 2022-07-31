@@ -45,11 +45,11 @@ def wait_for_logged_in_state(
 
 def go_to_reports_page(driver: webdriver.remote.webdriver.WebDriver) -> None:
     driver.get(
-        "https://www.interactivebrokers.co.uk/AccountManagement/AmAuthentication?action=Statements"
+        "https://www.interactivebrokers.co.uk' + '/AccountManagement/AmAuthentication?action=Statements"
     )
     # Wait for the page to load
-    driver.find_element_by_xpath(
-        "//*[normalize-space(text()) = 'MTM Summary']/../../..")
+    driver.find_elements(
+        By.XPATH, "//*[normalize-space(text()) = 'MTM Summary']/../../..")
 
 
 def format_date(day: datetime.date) -> str:
