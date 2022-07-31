@@ -24,7 +24,12 @@ Currently implemented fetchers are:
 
 1. [Install Selenium Webdriver
    (geckodriver)](https://www.selenium.dev/documentation/en/selenium_installation/installing_webdriver_binaries/)
-2. Run
+2. You have two choices for installation. I recommend using pipx, which will
+   install the app in a standalone environment:
+
+    pipx install .
+
+   alternatively, you may just go with pip:
 
     pip install --editable .
 
