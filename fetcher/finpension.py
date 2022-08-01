@@ -92,3 +92,22 @@ def fetch_data(creds: Credentials, gmail_creds: gmail.Credentials,
     time.sleep(2)
     mail_transactions(driver)
     return retry_n_times(lambda: fetch_csv_from_gmail(gmail_creds))
+
+
+def fetch_portfolio_total(
+        creds: Credentials,
+        driver: webdriver.remote.webdriver.WebDriver) -> list[str]:
+    """Fetches Finpensions' total portfolio value.
+
+    Returns:
+        A list of human-readable strings describing a value of each portfolio.
+    """
+    driver.implicitly_wait(30)
+    login(creds, driver)
+    wait_for_login(driver)
+    time.sleep(2)
+    options_container = driver.find_element(
+        By.CLASS_NAME, 'web-page-header__portfolio-options')
+    options = options_container.find_elements(
+        By.CLASS_NAME, 'web-page-header__portfolio-option')
+    return [o.get_attribute('innerText') for o in options]

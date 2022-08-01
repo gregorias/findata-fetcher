@@ -201,6 +201,18 @@ def pull_finpension(ctx) -> None:
         pull_finpension_helper(driver, download_directory, config)
 
 
+@cli.command()
+@click.pass_context
+def pull_finpension_portfolio_total(ctx) -> None:
+    """Fetches Finpension portfolio total and outputs it to stdout."""
+    config = read_config_from_context(ctx)
+    with getFirefoxDriver() as driver:
+        totals = finpension.fetch_portfolio_total(
+            extract_finpension_credentials(config), driver)
+        for t in totals:
+            print(t)
+
+
 def pull_finpension_helper(driver: webdriver.remote.webdriver.WebDriver,
                            download_directory: PurePath, config: dict) -> None:
     with open_and_save_on_success(download_directory / 'finpension.csv',

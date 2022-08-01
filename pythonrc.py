@@ -3,6 +3,7 @@
 # in my (b)python setup and provides convenient bindings.
 from bs4 import BeautifulSoup  # type: ignore
 from selenium import webdriver
+from selenium.webdriver.common.by import By  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
 import email
 import json
