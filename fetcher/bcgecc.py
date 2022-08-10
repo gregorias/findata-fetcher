@@ -80,7 +80,7 @@ def fetch_data(creds: Credentials,
     """Fetches Viseca's transaction data using Selenium
 
     Returns:
-        A CSV UTF-8 encoded string with the fetched transactions.
+        A PDF bytestream representing the latest statement.
     """
     login(creds, driver)
     wait_for_login(driver)

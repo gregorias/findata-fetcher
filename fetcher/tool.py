@@ -99,18 +99,11 @@ def pull_bcge(ctx) -> None:
 @cli.command()
 @click.pass_context
 def pull_bcgecc(ctx) -> None:
-    """Fetches BCGE CC data into a CSV file."""
+    """Fetches BCGE CC data and outputs a PDF."""
     config = read_config_from_context(ctx)
-    download_directory = PurePath(config['download_directory'])
     with getFirefoxDriver() as driver:
-        return pull_bcgecc_helper(driver, download_directory, config)
-
-
-def pull_bcgecc_helper(driver: webdriver.remote.webdriver.WebDriver,
-                       download_directory: PurePath, config: dict) -> None:
-    with open_and_save_on_success(download_directory / 'bcgecc.pdf',
-                                  'wb') as f:
-        f.write(bcgecc.fetch_data(extract_bcgecc_credentials(config), driver))
+        sys.stdout.buffer.write(
+            bcgecc.fetch_data(extract_bcgecc_credentials(config), driver))
 
 
 @cli.command()
@@ -342,7 +335,6 @@ def pull_all(ctx) -> None:
     with webdriverwire.Firefox() as driver:
         pull_ib_helper(driver, download_directory, config)
     with getFirefoxDriver() as driver:
-        pull_bcgecc_helper(driver, download_directory, config)
         pull_cs_account_history_helper(driver, download_directory, config)
         pull_mbank_helper(driver, download_directory, config)
         pull_revolut_helper(driver, download_directory, config)
