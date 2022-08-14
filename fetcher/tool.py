@@ -109,7 +109,10 @@ def pull_bcgecc(ctx) -> None:
 @cli.command()
 @click.pass_context
 def pull_coop_supercard(ctx) -> None:
-    """Fetches Coop receipt PDFs from supercard.ch."""
+    """Fetches Coop receipt PDFs from supercard.ch.
+
+    This command saves the PDFs in the download directory.
+    """
     config = ctx.obj['config']
     service = FirefoxService(log_path=path.devnull)
     opts = webdriver.FirefoxOptions()

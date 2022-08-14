@@ -135,6 +135,10 @@ def fetch_and_save_receipts(
             "present.")
     last_bc = load_last_bc(last_bc_filepath)
     for receipt in fetch_receipts(driver, creds, last_bc):
+        # We save the receipts instead of just outputting them, because there
+        # may be many receipts. Outputting all of them to a stream would mean
+        # that we would lose the information about where one receipt ends and
+        # another one begins.
         save_receipt(target_dir=target_dir,
                      last_bc_filepath=last_bc_filepath,
                      receipt=receipt)
