@@ -221,18 +221,15 @@ def pull_finpension_helper(driver: webdriver.remote.webdriver.WebDriver,
 @cli.command()
 @click.pass_context
 def pull_ib(ctx) -> None:
-    """Fetches Interactive Brokers into a CSV file."""
+    """Pulls Interactive Brokers CSV file statement."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
     service = FirefoxService(log_path=path.devnull)
+    # We need to use webdriverwire, because we need access to the `requests`
+    # API.
     with webdriverwire.Firefox(service=service) as driver:
-        pull_ib_helper(driver, download_directory, config)
-
-
-def pull_ib_helper(driver: webdriver.remote.webdriver.WebDriver,
-                   download_directory: PurePath, config: dict) -> None:
-    with open_and_save_on_success(download_directory / 'ib.csv', 'wb') as f:
-        f.write(ib.fetch_data(driver, extract_ib_credentials(config)))
+        sys.stdout.buffer.write(
+            ib.fetch_data(driver, extract_ib_credentials(config)))
 
 
 @cli.command()
@@ -335,8 +332,6 @@ def pull_all(ctx) -> None:
         gmail_creds,
         download_directory,
     )
-    with webdriverwire.Firefox() as driver:
-        pull_ib_helper(driver, download_directory, config)
     with getFirefoxDriver() as driver:
         pull_cs_account_history_helper(driver, download_directory, config)
         pull_mbank_helper(driver, download_directory, config)
