@@ -44,8 +44,8 @@ def wait_for_user_to_provide_pin_and_login(
     wait.until(url_is_client_website())
 
 
-def login(creds: Credentials,
-          driver: webdriver.remote.webdriver.WebDriver) -> None:
+def login(driver: webdriver.remote.webdriver.WebDriver,
+          creds: Credentials) -> None:
     """Logs into the Charles Schwab website"""
     LOGIN_PAGE = 'https://client.schwab.com/Login/SignOn/CustomerCenterLogin.aspx'
     driver.get(LOGIN_PAGE)
@@ -99,6 +99,6 @@ def fetch_account_history(driver: webdriver.remote.webdriver.WebDriver,
         A CSV UTF-8 encoded statement.
     """
     driver.implicitly_wait(30)
-    login(creds, driver)
+    login(driver, creds)
     cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
     return fetch_account_history_csv(cookies)
