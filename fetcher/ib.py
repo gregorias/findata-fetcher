@@ -36,6 +36,11 @@ def login(driver: webdriver.remote.webdriver.WebDriver,
     IB_KEY_OPTION_VALUE = '5.2a'
     set_value(driver, secondFactorSelect, IB_KEY_OPTION_VALUE)
     driver.execute_script('arguments[0].onchange()', secondFactorSelect)
+    # It's a better design to make this function synchronous and wait for the
+    # login to be successful. It is more intuitive. When I use ib.login(...),
+    # then I expect that upon return of control. I can use issue further
+    # instructions in the logged in state.
+    wait_for_logged_in_state(driver)
 
 
 def wait_for_logged_in_state(
@@ -200,5 +205,4 @@ def fetch_data(driver: webdriver.remote.webdriver.WebDriver,
     """
     driver.implicitly_wait(60)
     login(driver, creds)
-    wait_for_logged_in_state(driver)
     return fetch_account_statement(driver)

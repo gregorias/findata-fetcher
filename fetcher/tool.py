@@ -240,7 +240,6 @@ def ib_set_up_incoming_deposit(ctx, source, amount) -> None:
     with getFirefoxDriver() as driver:
         driver.implicitly_wait(20)
         ib.login(driver, extract_ib_credentials(config))
-        ib.wait_for_logged_in_state(driver)
         ib_source = (ib.DepositSource.BCGE
                      if source == 'BCGE' else ib.DepositSource.CHARLES_SCHWAB)
         instructions = ib.set_up_incoming_deposit(driver, ib_source,
