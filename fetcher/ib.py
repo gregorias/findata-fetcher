@@ -23,8 +23,8 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-def login(creds: Credentials,
-          driver: webdriver.remote.webdriver.WebDriver) -> None:
+def login(driver: webdriver.remote.webdriver.WebDriver,
+          creds: Credentials) -> None:
     LOGIN_PAGE = 'https://www.interactivebrokers.co.uk/sso/Login?RL=1'
     driver.get(LOGIN_PAGE)
     driver.find_element(By.ID, "user_name").send_keys(creds.id + Keys.TAB)
@@ -138,6 +138,6 @@ def fetch_data(driver: webdriver.remote.webdriver.WebDriver,
         A CSV with the fetched transactions.
     """
     driver.implicitly_wait(60)
-    login(creds, driver)
+    login(driver, creds)
     wait_for_logged_in_state(driver)
     return fetch_account_statement(driver)
