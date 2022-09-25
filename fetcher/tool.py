@@ -6,7 +6,9 @@ Usage: python -m fetcher.tool --help
 """
 
 from contextlib import contextmanager
+import csv
 import datetime
+import decimal
 import functools
 import json
 import logging
@@ -216,6 +218,42 @@ def pull_finpension_helper(driver: webdriver.remote.webdriver.WebDriver,
         f.write(
             finpension.fetch_data(extract_finpension_credentials(config),
                                   extract_gmail_credentials(config), driver))
+
+
+@cli.command()
+@click.pass_context
+@click.option('--source',
+              required=True,
+              type=click.Choice(['CS', 'BCGE'], case_sensitive=False))
+@click.option('--amount', required=True)
+def ib_set_up_incoming_deposit(ctx, source, amount) -> None:
+    """Sets up an incoming deposit on Interactive Brokers.
+
+    Outputs a CSV with wire instructions.
+
+    Example use:
+
+        ib-set-up-incoming-deposit --source=cs --amount=21.37
+    """
+    config = read_config_from_context(ctx)
+    service = FirefoxService(log_path=path.devnull)
+    with getFirefoxDriver() as driver:
+        driver.implicitly_wait(20)
+        ib.login(driver, extract_ib_credentials(config))
+        ib.wait_for_logged_in_state(driver)
+        ib_source = (ib.DepositSource.BCGE
+                     if source == 'BCGE' else ib.DepositSource.CHARLES_SCHWAB)
+        instructions = ib.set_up_incoming_deposit(driver, ib_source,
+                                                  decimal.Decimal(amount))
+        writer = csv.DictWriter(sys.stdout,
+                                fieldnames=["key", "value"],
+                                delimiter=',')
+        writer.writeheader()
+        for key, value in instructions.items():
+            writer.writerow({
+                'key': key,
+                'value': value,
+            })
 
 
 @cli.command()

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Fetches account statement from Interactive Brokers"""
+"""Interactive Brokers interface."""
 import base64
 import datetime
+from decimal import Decimal
+from enum import Enum
 import json
 import logging
 from typing import Dict, NamedTuple, Optional
@@ -15,7 +17,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 import requests
 
 from .dateutils import yesterday
-from .driverutils import driver_cookie_jar_to_requests_cookies, set_value
+from .driverutils import (driver_cookie_jar_to_requests_cookies, get_parent,
+                          set_value)
 
 
 class Credentials(NamedTuple):
@@ -112,6 +115,64 @@ def fetch_account_statement_csv(
                         ('Response reason: {0}, parameters: {1}'
                          ).format(response.reason, (FETCH_URL, cookies)))
     return decode_account_statement_fetch_response_content(response.content)
+
+
+class DepositSource(Enum):
+    """Available deposit sources.
+
+    The value is the IB method name of the source.
+    """
+    CHARLES_SCHWAB = "Charles Schwab"
+    BCGE = "Wire-BCGE"
+
+
+def set_up_incoming_deposit(driver: webdriver.remote.webdriver.WebDriver,
+                            source: DepositSource,
+                            value: Decimal) -> dict[str, str]:
+    """
+    Sets up an incoming deposit on IB.
+
+    :param driver webdriver.remote.webdriver.WebDriver
+    :param source DepositSource
+    :param value Decimal The deposit value.
+    :rtype dict[str, str] Wire instructions.
+    """
+    driver.get('https://www.interactivebrokers.co.uk' +
+               '/AccountManagement/AmAuthentication' +
+               '?action=FUND_TRANSFERS&type=DEPOSIT')
+    method_selector = driver.find_element(
+        By.XPATH, f"//span[normalize-space(text()) = '{source.value}']/../..")
+    method_selector_class = method_selector.get_attribute('class')
+    assert method_selector_class == 'method-selector', (
+        f"Expected to find a method selector element for f{source.name}" +
+        f", but found an element of class f{method_selector_class}." +
+        f" Something might have changed on the website since implementation.\n"
+    )
+    method_selector.click()
+
+    amount_input = driver.find_element(By.CSS_SELECTOR, 'input[name="amount"]')
+    amount_input.send_keys(str(value) + Keys.TAB)
+    submit_button = driver.find_element(
+        By.CSS_SELECTOR, '.form-group am-button[btn-type = "primary"]')
+    submit_button.click()
+
+    # Verify success
+    driver.find_element(
+        By.XPATH, "//*[normalize-space(text()) = " +
+        "'Provide the following information to your bank to initiate the transfer.'"
+        + "]")
+
+    wire_instructions = driver.find_element(By.CSS_SELECTOR,
+                                            'wire-destination-bank')
+    instructions = {}
+    for row in wire_instructions.find_elements(By.CSS_SELECTOR, '.row'):
+        labels = row.find_elements(By.CSS_SELECTOR, 'label')
+        assert len(labels) == 2, (
+            "Expected each wire instructions row to contain two labels" +
+            f" but got {len(labels)}. Aborting. " +
+            "I have created the deposit intent, so you may need to cancel it.")
+        instructions[labels[0].text] = labels[1].text
+    return instructions
 
 
 def fetch_account_statement(
