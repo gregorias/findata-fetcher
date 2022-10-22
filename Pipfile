@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 beautifulsoup4 = ">=4.10"
 CurrencyConverter = ">=0.14.1"
-click = "==8.0.*"
+click = "==8.*"
 pyuserinput = "*"
 requests = "==2.*"
 selenium = ">=4.1"
