@@ -1,63 +1,18 @@
-# -*- coding: utf-8 -*-
-"""This module implements Charles Schwab statement fetchers."""
+"""Charles Schwab browser automation tools."""
 import datetime
-import time
-from typing import Dict, NamedTuple
+from typing import NamedTuple
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.support.ui import WebDriverWait
+import playwright
+from playwright.sync_api import sync_playwright
 import requests
 
 from .dateutils import yesterday
-from .driverutils import driver_cookie_jar_to_requests_cookies
+from .playwrightutils import playwright_cookie_jar_to_requests_cookies
 
 
 class Credentials(NamedTuple):
     id: str
     pwd: str
-
-
-def wait_for_pin_number_and_select_it(
-        wait: WebDriverWait, driver: webdriver.remote.webdriver.WebDriver):
-    wait.until(
-        expected_conditions.url_matches('https://sws-gateway.schwab.com/.*'))
-    driver.switch_to.window(driver.window_handles[0])
-    pin_element = driver.find_element(By.ID, "placeholderCode")
-    # Initially the element is findable but not clickable. When that happens,
-    # the click operation fails, so wait for the element to be visible.
-    wait.until(expected_conditions.visibility_of(pin_element))
-    pin_element.click()
-    return pin_element
-
-
-def url_is_client_website():
-    return expected_conditions.url_matches('https://client.schwab.com/.*')
-
-
-def wait_for_user_to_provide_pin_and_login(
-        driver: webdriver.remote.webdriver.WebDriver) -> None:
-    LONG_TIME_IN_SECONDS = 10 * 60
-    wait = WebDriverWait(driver, LONG_TIME_IN_SECONDS)
-    wait.until(url_is_client_website())
-
-
-def login(driver: webdriver.remote.webdriver.WebDriver,
-          creds: Credentials) -> None:
-    """Logs into the Charles Schwab website"""
-    LOGIN_PAGE = 'https://client.schwab.com/Login/SignOn/CustomerCenterLogin.aspx'
-    driver.get(LOGIN_PAGE)
-    driver.switch_to.frame("lmsSecondaryLogin")
-    login_id = driver.find_element(By.ID, "loginIdInput")
-    wait = WebDriverWait(driver, 30)
-    wait.until(expected_conditions.visibility_of(login_id))
-    login_id.send_keys(creds.id + Keys.TAB)
-    driver.find_element(By.ID,
-                        "passwordInput").send_keys(creds.pwd + Keys.RETURN)
-    wait_for_pin_number_and_select_it(wait, driver)
-    wait_for_user_to_provide_pin_and_login(driver)
 
 
 def create_fetch_csv_request_params(to_date: datetime.date):
@@ -78,7 +33,7 @@ def create_fetch_csv_request_params(to_date: datetime.date):
     }
 
 
-def fetch_account_history_csv(cookies: Dict[str, str]) -> bytes:
+def fetch_account_history_csv(cookies: dict[str, str]) -> bytes:
     """Fetches account history CSV through a GET request."""
     GET_URL = ('https://client.schwab.com' +
                '/api/History/Brokerage/ExportTransaction')
@@ -91,14 +46,43 @@ def fetch_account_history_csv(cookies: Dict[str, str]) -> bytes:
     return response.content
 
 
-def fetch_account_history(driver: webdriver.remote.webdriver.WebDriver,
-                          creds: Credentials) -> bytes:
-    """Fetches Charles Schwab's account history using Selenium
+def login(page: playwright.sync_api.Page, creds: Credentials) -> None:
+    """Logs in to Charles Schwab.
 
-    Returns:
-        A CSV UTF-8 encoded statement.
+    Returns once the authentication process finishes. The page will contain
+    Charles Schwab's dashboard.
+
+    :param page playwright.sync_api.Page: A blank page.
+    :param creds Credentials
+    :rtype None
     """
-    driver.implicitly_wait(30)
-    login(driver, creds)
-    cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
-    return fetch_account_history_csv(cookies)
+    LOGIN_PAGE = 'https://client.schwab.com/Login/SignOn/CustomerCenterLogin.aspx'
+    page.goto(LOGIN_PAGE)
+    page.locator("#loginIdInput:focus")
+    page.locator("#passwordInput")
+    page.keyboard.type(creds.id)
+    page.keyboard.press('Tab')
+    page.keyboard.type(creds.pwd)
+    page.keyboard.press('Enter')
+    page.wait_for_url('https://client.schwab.com/clientapps/**')
+
+
+def fetch_account_history(browser: playwright.sync_api.Browser,
+                          page: playwright.sync_api.Page,
+                          creds: Credentials) -> bytes:
+    """
+    Fetches Charles Schwab's account history.
+
+    :param browser playwright.sync_api.Browser
+    :param page playwright.sync_api.Page: A blank page.
+    :param creds Credentials
+    :rtype bytes: A CSV UTF-8 encoded statement.
+    """
+    login(page, creds)
+    if len(browser.contexts) != 1:
+        raise Exception("Expected exactly one browser context" +
+                        " that corresponds to a CS page.")
+    bc: playwright.sync_api.BrowserContext = browser.contexts[0]
+    return fetch_account_history_csv(
+        playwright_cookie_jar_to_requests_cookies(
+            bc.cookies(urls=['https://client.schwab.com'])))

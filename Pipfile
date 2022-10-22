@@ -12,6 +12,7 @@ requests = "==2.*"
 selenium = ">=4.1"
 selenium-wire = "*"
 splitwise = "*"
+playwright = "*"
 
 [dev-packages]
 bpython = "*"

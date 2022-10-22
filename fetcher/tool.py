@@ -21,6 +21,7 @@ import sys
 from selenium import webdriver  # type: ignore
 from selenium.webdriver.firefox.service import Service as FirefoxService  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
+from playwright.sync_api import sync_playwright
 import click  # type: ignore
 
 from . import bcge
@@ -134,16 +135,15 @@ def pull_cs_account_history(ctx) -> None:
     """Fetches Charles Schwab account history into a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with getFirefoxDriver() as driver:
-        pull_cs_account_history_helper(driver, download_directory, config)
-
-
-def pull_cs_account_history_helper(
-        driver: webdriver.remote.webdriver.WebDriver,
-        download_directory: PurePath, config: dict) -> None:
-    with open_and_save_on_success(download_directory / 'cs.csv', 'wb') as f:
-        f.write(
-            cs.fetch_account_history(driver, extract_cs_credentials(config)))
+    with sync_playwright() as pw:
+        browser = pw.firefox.launch(headless=False)
+        page = browser.new_page()
+        with open_and_save_on_success(download_directory / 'cs.csv',
+                                      'wb') as f:
+            f.write(
+                cs.fetch_account_history(browser, page,
+                                         extract_cs_credentials(config)))
+        browser.close()
 
 
 @cli.command()
@@ -370,7 +370,6 @@ def pull_all(ctx) -> None:
         download_directory,
     )
     with getFirefoxDriver() as driver:
-        pull_cs_account_history_helper(driver, download_directory, config)
         pull_mbank_helper(driver, download_directory, config)
         pull_revolut_helper(driver, download_directory, config)
 

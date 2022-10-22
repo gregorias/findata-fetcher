@@ -5,9 +5,11 @@ from bs4 import BeautifulSoup  # type: ignore
 from selenium import webdriver
 from selenium.webdriver.common.by import By  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
+from playwright.sync_api import sync_playwright
 import email
 import json
 import requests
+import playwright
 
 import fetcher.tool as t
 from fetcher.driverutils import driver_cookie_jar_to_requests_cookies
@@ -49,3 +51,14 @@ def start_driver_wire():
     driver = webdriverwire.Firefox()
     driver.implicitly_wait(20)
     return driver
+
+
+def start_playwright(
+) -> tuple[playwright.sync_api.Playwright, playwright.sync_api.Browser]:
+    """Starts a synchronous Playwright instance.
+
+    :rtype tuple[playwright.sync_api.Playwright, playwright.sync_api.Browser]
+    """
+    pw = sync_playwright().start()
+    browser = pw.firefox.launch(headless=False)
+    return (pw, browser)
