@@ -33,6 +33,12 @@ Currently implemented fetchers are:
 
     pip install --editable .
 
+### Shell completion
+
+Findata-fetcher provides shell completion through [Click][click]. To enable
+shell completion, follow [its
+instructions](https://click.palletsprojects.com/en/8.1.x/shell-completion/#enabling-completion).
+
 ## Usage example
 
     pipenv shell # If not already using pipenv
@@ -63,3 +69,5 @@ Also install [direnv](https://direnv.net/) to benefit from some dev tools.
 To run tests, use `testall`.
 
 To run tests and check for coverage, use `coverage`.
+
+[click]: https://click.palletsprojects.com/en/8.1.x/
