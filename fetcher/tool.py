@@ -386,6 +386,10 @@ def extract_cs_credentials(config: dict) -> cs.Credentials:
     return cs.Credentials(id=config['cs_id'], pwd=config['cs_pwd'])
 
 
+def extract_cs_account_id(config: dict) -> cs.AccountId:
+    return cs.AccountId(id=config['cs_account_id'])
+
+
 def extract_degiro_credentials(config: dict) -> degiro.Credentials:
     return degiro.Credentials(id=config['degiro_id'], pwd=config['degiro_pwd'])
 

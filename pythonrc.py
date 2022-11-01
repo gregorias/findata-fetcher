@@ -32,6 +32,7 @@ with open('config.json', 'r') as cf:
     bcge_creds = t.extract_bcge_credentials(config)
     bcgecc_creds = t.extract_bcgecc_credentials(config)
     cs_creds = t.extract_cs_credentials(config)
+    cs_account_id = t.extract_cs_account_id(config)
     degiro_creds = t.extract_degiro_credentials(config)
     finpension_creds = t.extract_finpension_credentials(config)
     gmail_creds = t.extract_gmail_credentials(config)

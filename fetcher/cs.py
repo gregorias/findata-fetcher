@@ -15,6 +15,11 @@ class Credentials(NamedTuple):
     pwd: str
 
 
+class AccountId(NamedTuple):
+    "An 8 digit string representing the account ID."
+    id: str
+
+
 def create_fetch_csv_request_params(to_date: datetime.date):
     return {
         'sortSeq': '1',
