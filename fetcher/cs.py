@@ -54,7 +54,15 @@ def login(page: playwright.sync_api.Page, creds: Credentials) -> None:
 
 
 @contextlib.contextmanager
-def new_file_watcher(dir: pathlib.Path):
+def new_file_preserver(dir: pathlib.Path):
+    """
+    A context manager that preserves a file downloaded in a Playwright session.
+
+    Playwright may asynchronously download a file. This context manager watches
+    for this event and copies the file once it happens.
+
+    :param dir pathlib.Path: The downloads directory used by Playwright.
+    """
     old_dirs = set(os.listdir(dir))
     yield None
     for _ in range(20):
@@ -84,5 +92,5 @@ def download_transaction_history(page: playwright.sync_api.Page,
     :rtype None
     """
     login(page, creds)
-    with new_file_watcher(download_dir):
+    with new_file_preserver(download_dir):
         trigger_transaction_history_export(page)
