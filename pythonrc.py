@@ -32,7 +32,6 @@ with open('config.json', 'r') as cf:
     bcge_creds = t.extract_bcge_credentials(config)
     bcgecc_creds = t.extract_bcgecc_credentials(config)
     cs_creds = t.extract_cs_credentials(config)
-    cs_account_id = t.extract_cs_account_id(config)
     degiro_creds = t.extract_degiro_credentials(config)
     finpension_creds = t.extract_finpension_credentials(config)
     gmail_creds = t.extract_gmail_credentials(config)
@@ -55,11 +54,14 @@ def start_driver_wire():
 
 
 def start_playwright(
-) -> tuple[playwright.sync_api.Playwright, playwright.sync_api.Browser]:
+) -> tuple[playwright.sync_api.Playwright, playwright.sync_api.Browser,
+           playwright.sync_api.Page]:
     """Starts a synchronous Playwright instance.
 
     :rtype tuple[playwright.sync_api.Playwright, playwright.sync_api.Browser]
     """
     pw = sync_playwright().start()
-    browser = pw.firefox.launch(headless=False)
-    return (pw, browser)
+    browser = pw.firefox.launch(headless=False,
+                                downloads_path="/Users/grzesiek/Downloads")
+    p = browser.new_page()
+    return (pw, browser, p)

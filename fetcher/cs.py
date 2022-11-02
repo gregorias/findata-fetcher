@@ -1,13 +1,13 @@
 """Charles Schwab browser automation tools."""
-import datetime
+import contextlib
+import os
+import pathlib
+import shutil
+import time
 from typing import NamedTuple
 
 import playwright
-from playwright.sync_api import sync_playwright
-import requests
-
-from .dateutils import yesterday
-from .playwrightutils import playwright_cookie_jar_to_requests_cookies
+import playwright.sync_api
 
 
 class Credentials(NamedTuple):
@@ -15,40 +15,20 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-class AccountId(NamedTuple):
-    "An 8 digit string representing the account ID."
-    id: str
-
-
-def create_fetch_csv_request_params(to_date: datetime.date):
-    return {
-        'sortSeq': '1',
-        'sortVal': '0',
-        'tranFilter': '14|9|10|6|7|0|2|11|8|3|15|5|13|4|12|1',
-        'timeFrame': '7',
-        'filterSymbol': '',
-        'fromDate': '01/24/2017',
-        'toDate': to_date.strftime('%m/%d/%Y'),
-        'exportError': '',
-        'invalidFromDate': '',
-        'invalidToDate': '',
-        'symbolExportValue': '',
-        'includeOptions': 'N',
-        'displayTotal': 'true',
-    }
-
-
-def fetch_account_history_csv(cookies: dict[str, str]) -> bytes:
-    """Fetches account history CSV through a GET request."""
-    GET_URL = ('https://client.schwab.com' +
-               '/api/History/Brokerage/ExportTransaction')
-    params = create_fetch_csv_request_params(yesterday(datetime.date.today()))
-    response = requests.get(GET_URL, params=params, cookies=cookies)
-    if not response.ok:
-        raise Exception("The statement fetch request has failed. " +
-                        ('Response reason: {0}, parameters: {1}'
-                         ).format(response.reason, (params, cookies)))
-    return response.content
+def trigger_transaction_history_export(page: playwright.sync_api.Page):
+    page.goto('https://client.schwab.com/app/accounts/transactionhistory/#/')
+    with page.expect_popup() as popup_info:
+        page.locator("#bttnExport button").click()
+    popup = popup_info.value
+    try:
+        popup.locator(
+            '#ctl00_WebPartManager1_wpExportDisclaimer_ExportDisclaimer_btnOk'
+        ).click()
+    except playwright._impl._api_types.Error as e:  # type: ignore
+        if not e.message.startswith("Target closed"):
+            raise e
+        # Playwright for some reason throws "Target closed" error after the
+        # click. It doesn't interfere with the download so, just ignore it.
 
 
 def login(page: playwright.sync_api.Page, creds: Credentials) -> None:
@@ -61,33 +41,48 @@ def login(page: playwright.sync_api.Page, creds: Credentials) -> None:
     :param creds Credentials
     :rtype None
     """
-    LOGIN_PAGE = 'https://client.schwab.com/Login/SignOn/CustomerCenterLogin.aspx'
-    page.goto(LOGIN_PAGE)
+    page.goto(
+        'https://client.schwab.com/Login/SignOn/CustomerCenterLogin.aspx')
     page.locator("#loginIdInput:focus")
     page.locator("#passwordInput")
     page.keyboard.type(creds.id)
     page.keyboard.press('Tab')
     page.keyboard.type(creds.pwd)
     page.keyboard.press('Enter')
+    page.locator('#placeholderCode').focus()
     page.wait_for_url('https://client.schwab.com/clientapps/**')
 
 
-def fetch_account_history(browser: playwright.sync_api.Browser,
-                          page: playwright.sync_api.Page,
-                          creds: Credentials) -> bytes:
-    """
-    Fetches Charles Schwab's account history.
+@contextlib.contextmanager
+def new_file_watcher(dir: pathlib.Path):
+    old_dirs = set(os.listdir(dir))
+    yield None
+    for _ in range(20):
+        new_dirs = set(os.listdir(dir))
+        if len(new_dirs) > len(old_dirs):
+            new_files = new_dirs.difference(old_dirs)
+            for nf in new_files:
+                # We need to copy the file, because playwright deletes
+                # downloaded files on browser close.
+                shutil.copy(dir / nf, dir / (nf + ".csv"))
+            break
+        else:
+            time.sleep(1)
+            continue
 
-    :param browser playwright.sync_api.Browser
+
+def download_transaction_history(page: playwright.sync_api.Page,
+                                 creds: Credentials,
+                                 download_dir: pathlib.Path) -> None:
+    """
+    Downloads Charles Schwab's transaction history.
+
     :param page playwright.sync_api.Page: A blank page.
     :param creds Credentials
-    :rtype bytes: A CSV UTF-8 encoded statement.
+    :param download_dir pathlib.Path:
+        The download directory used by the browser.
+    :rtype None
     """
     login(page, creds)
-    if len(browser.contexts) != 1:
-        raise Exception("Expected exactly one browser context" +
-                        " that corresponds to a CS page.")
-    bc: playwright.sync_api.BrowserContext = browser.contexts[0]
-    return fetch_account_history_csv(
-        playwright_cookie_jar_to_requests_cookies(
-            bc.cookies(urls=['https://client.schwab.com'])))
+    with new_file_watcher(download_dir):
+        trigger_transaction_history_export(page)

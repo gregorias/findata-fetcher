@@ -132,17 +132,15 @@ def pull_coop_supercard(ctx) -> None:
 @cli.command()
 @click.pass_context
 def pull_cs_account_history(ctx) -> None:
-    """Fetches Charles Schwab account history into a CSV file."""
+    """Downloads Charles Schwab transaction history into a CSV file."""
     config = read_config_from_context(ctx)
-    download_directory = PurePath(config['download_directory'])
+    download_directory = Path(config["cs_download_dir"])
     with sync_playwright() as pw:
-        browser = pw.firefox.launch(headless=False)
-        page = browser.new_page()
-        with open_and_save_on_success(download_directory / 'cs.csv',
-                                      'wb') as f:
-            f.write(
-                cs.fetch_account_history(browser, page,
-                                         extract_cs_credentials(config)))
+        browser = pw.firefox.launch(headless=False,
+                                    downloads_path=download_directory)
+        cs.download_transaction_history(browser.new_page(),
+                                        extract_cs_credentials(config),
+                                        download_directory)
         browser.close()
 
 
@@ -384,10 +382,6 @@ def extract_bcgecc_credentials(config: dict) -> bcgecc.Credentials:
 
 def extract_cs_credentials(config: dict) -> cs.Credentials:
     return cs.Credentials(id=config['cs_id'], pwd=config['cs_pwd'])
-
-
-def extract_cs_account_id(config: dict) -> cs.AccountId:
-    return cs.AccountId(id=config['cs_account_id'])
 
 
 def extract_degiro_credentials(config: dict) -> degiro.Credentials:
