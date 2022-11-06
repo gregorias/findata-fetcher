@@ -10,7 +10,6 @@
 
   "cs_id": "username",
   "cs_pwd": "hunter2",
-  "cs_download_dir": "/home/user/Downloads",
 
   "degiro_id": "abc123",
   "degiro_pwd": "hunter2",

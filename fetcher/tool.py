@@ -130,14 +130,17 @@ def pull_coop_supercard(ctx) -> None:
 
 
 @cli.command()
+@click.option('--download-directory',
+              required=True,
+              help='The target download directory.')
 @click.pass_context
-def pull_cs_account_history(ctx) -> None:
+def pull_cs_account_history(ctx, download_directory) -> None:
     """Downloads Charles Schwab transaction history into a CSV file.
 
     This command places the downloaded file in a preconfigured directory.
     """
     config = read_config_from_context(ctx)
-    download_directory = Path(config["cs_download_dir"])
+    download_directory = Path(download_directory)
     with sync_playwright() as pw:
         browser = pw.firefox.launch(headless=False,
                                     downloads_path=download_directory)
