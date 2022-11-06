@@ -132,7 +132,10 @@ def pull_coop_supercard(ctx) -> None:
 @cli.command()
 @click.pass_context
 def pull_cs_account_history(ctx) -> None:
-    """Downloads Charles Schwab transaction history into a CSV file."""
+    """Downloads Charles Schwab transaction history into a CSV file.
+
+    This command places the downloaded file in a preconfigured directory.
+    """
     config = read_config_from_context(ctx)
     download_directory = Path(config["cs_download_dir"])
     with sync_playwright() as pw:
