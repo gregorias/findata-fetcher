@@ -22,7 +22,7 @@ from selenium import webdriver  # type: ignore
 from selenium.webdriver.firefox.service import Service as FirefoxService  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
 from playwright.sync_api import sync_playwright
-import click  # type: ignore
+import click
 
 from . import bcge
 from . import bcgecc
