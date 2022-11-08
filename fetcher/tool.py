@@ -130,9 +130,12 @@ def pull_coop_supercard(ctx) -> None:
 
 
 @cli.command()
-@click.option('--download-directory',
-              required=True,
-              help='The target download directory.')
+@click.option(
+    '--download-directory',
+    required=True,
+    help='The target download directory.',
+    type=click.Path(exists=True, file_okay=False, writable=True),
+)
 @click.pass_context
 def pull_cs_account_history(ctx, download_directory) -> None:
     """Downloads Charles Schwab transaction history into a CSV file.
