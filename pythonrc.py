@@ -2,6 +2,7 @@
 # I use this module for interactive debugging. It is automatically loaded
 # in my (b)python setup and provides convenient bindings.
 from bs4 import BeautifulSoup  # type: ignore
+from enum import Enum
 from selenium import webdriver
 from selenium.webdriver.common.by import By  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
@@ -13,6 +14,7 @@ import playwright
 
 import fetcher.tool as t
 from fetcher.driverutils import driver_cookie_jar_to_requests_cookies
+from fetcher.playwrightutils import playwright_cookie_jar_to_requests_cookies
 from fetcher import bcge
 from fetcher import bcgecc
 from fetcher import coop_supercard
@@ -37,6 +39,7 @@ with open('config.json', 'r') as cf:
     gmail_creds = t.extract_gmail_credentials(config)
     ib_creds = t.extract_ib_credentials(config)
     revolut_creds = t.extract_revolut_credentials(config)
+    revolut_account_numbers = config['revolut_account_numbers']
     supercard_creds = t.extract_supercard_credentials(config)
     splitwise_creds = t.extract_splitwise_credentials(config)
 
@@ -53,7 +56,13 @@ def start_driver_wire():
     return driver
 
 
+class Browser(Enum):
+    FIREFOX = 1
+    CHROMIUM = 2
+
+
 def start_playwright(
+    browser_spec: Browser = Browser.FIREFOX
 ) -> tuple[playwright.sync_api.Playwright, playwright.sync_api.Browser,
            playwright.sync_api.Page]:
     """Starts a synchronous Playwright instance.
@@ -61,7 +70,8 @@ def start_playwright(
     :rtype tuple[playwright.sync_api.Playwright, playwright.sync_api.Browser]
     """
     pw = sync_playwright().start()
-    browser = pw.firefox.launch(headless=False,
-                                downloads_path="/Users/grzesiek/Downloads")
+    browser_type = pw.firefox if browser_spec == Browser.FIREFOX else pw.chromium
+    browser = browser_type.launch(headless=False,
+                                  downloads_path="/Users/grzesiek/Downloads")
     p = browser.new_page()
     return (pw, browser, p)
