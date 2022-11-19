@@ -22,7 +22,6 @@ import sys
 from selenium import webdriver  # type: ignore
 from selenium.webdriver.firefox.service import Service as FirefoxService  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
-from playwright.sync_api import sync_playwright
 from playwright.async_api import async_playwright
 import click
 

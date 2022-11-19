@@ -1,12 +1,13 @@
 # A dev pythonrc module.
 # I use this module for interactive debugging. It is automatically loaded
 # in my (b)python setup and provides convenient bindings.
+import asyncio
 from bs4 import BeautifulSoup  # type: ignore
 from enum import Enum
 from selenium import webdriver
 from selenium.webdriver.common.by import By  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 import email
 import json
 import requests
@@ -61,17 +62,19 @@ class Browser(Enum):
     CHROMIUM = 2
 
 
-def start_playwright(
+async def start_playwright(
     browser_spec: Browser = Browser.FIREFOX
-) -> tuple[playwright.sync_api.Playwright, playwright.sync_api.Browser,
-           playwright.sync_api.Page]:
+) -> tuple[playwright.async_api.Playwright, playwright.async_api.Browser,
+           playwright.async_api.Page]:
     """Starts a synchronous Playwright instance.
 
-    :rtype tuple[playwright.sync_api.Playwright, playwright.sync_api.Browser]
+    :rtype tuple[playwright.async_api.Playwright,
+                 playwright.async_api.Browser,
+                 playwright.async_api.Page]
     """
-    pw = sync_playwright().start()
+    pw = await async_playwright().start()
     browser_type = pw.firefox if browser_spec == Browser.FIREFOX else pw.chromium
-    browser = browser_type.launch(headless=False,
-                                  downloads_path="/Users/grzesiek/Downloads")
-    p = browser.new_page()
+    browser = await browser_type.launch(
+        headless=False, downloads_path="/Users/grzesiek/Downloads")
+    p = await browser.new_page()
     return (pw, browser, p)

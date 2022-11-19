@@ -1,7 +1,7 @@
 import unittest
 
 from fetcher.playwrightutils import (playwright_cookie_jar_to_requests_cookies)
-import playwright.sync_api
+import playwright.async_api
 
 
 class PlaywrightUtilsTestCase(unittest.TestCase):
@@ -9,7 +9,7 @@ class PlaywrightUtilsTestCase(unittest.TestCase):
     def test_transforms_cookie_jars(self):
         self.assertDictEqual(
             playwright_cookie_jar_to_requests_cookies(
-                map(playwright.sync_api.Cookie, [{
+                map(playwright.async_api.Cookie, [{
                     'domain': 'client.schwab.com',
                     'expires': 1666438898,
                     'httpOnly': False,

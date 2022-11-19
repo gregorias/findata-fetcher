@@ -3,14 +3,14 @@
 import contextlib
 import os
 import pathlib
-import playwright.sync_api
+import playwright.async_api
 import shutil
 import time
 from typing import TypedDict
 
 
 def playwright_cookie_jar_to_requests_cookies(
-        playwright_cookies: list[playwright.sync_api.Cookie]) -> dict:
+        playwright_cookies: list[playwright.async_api.Cookie]) -> dict:
     """
     Transforms a cookie jar from Playwright into a Requests-compatible dict.
 
