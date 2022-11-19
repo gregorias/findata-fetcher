@@ -17,7 +17,7 @@ def get_revolut_statement_part(
         if not filename: continue
 
         if re.match(
-                '^account-statement_\d*-\d*-\d*_\d*-\d*-\d*_de-ch_[0-9a-f]*.csv$',
+                r'^account-statement_\d*-\d*-\d*_\d*-\d*-\d*_de-ch_[0-9a-f]*.csv$',
                 filename):
             return part
     return None
