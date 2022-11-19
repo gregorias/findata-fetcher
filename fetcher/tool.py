@@ -299,13 +299,29 @@ def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
 
 
 @cli.command()
+@click.option(
+    '--download-directory',
+    required=True,
+    help='The target download directory.',
+    type=click.Path(exists=True, file_okay=False, writable=True),
+)
 @click.pass_context
-def pull_revolut(ctx) -> None:
+def pull_revolut(ctx, download_directory) -> None:
     """Fetches Revolut data into CSV files."""
     config = read_config_from_context(ctx)
-    download_directory = PurePath(config['download_directory'])
-    with getFirefoxDriver() as driver:
-        pull_revolut_helper(driver, download_directory, config)
+    download_directory = Path(download_directory)
+
+    async def run():
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(
+                headless=False, downloads_path=download_directory)
+            await revolut.download_statements(
+                await browser.new_page(), download_directory,
+                extract_revolut_credentials(config),
+                config['revolut_account_numbers'])
+            await browser.close()
+
+    asyncio.run(run())
 
 
 @cli.command()
@@ -327,12 +343,6 @@ def pull_splitwise(ctx) -> None:
     creds = extract_splitwise_credentials(config)
     csv = splitwise.export_balances_to_csv(splitwise.fetch_balances(creds))
     sys.stdout.buffer.write(csv)
-
-
-def pull_revolut_helper(driver: webdriver.remote.webdriver.WebDriver,
-                        download_directory: PurePath, config: dict) -> None:
-    creds = extract_revolut_credentials(config)
-    raise Exception("pull-revolut is not yet implemented.")
 
 
 @cli.command()
@@ -368,22 +378,6 @@ def pull_uber_eats(ctx) -> None:
             extract_gmail_credentials(config)):
         with open(download_dir / (title + '.ubereats'), 'w') as f:
             f.write(content)
-
-
-@cli.command()
-@click.pass_context
-def pull_all(ctx) -> None:
-    """Fetches data from all implemented sources."""
-    config = read_config_from_context(ctx)
-    download_directory = PurePath(config['download_directory'])
-    gmail_creds = extract_gmail_credentials(config)
-    easyride.fetch_and_archive_receipts(
-        gmail_creds,
-        download_directory,
-    )
-    with getFirefoxDriver() as driver:
-        pull_mbank_helper(driver, download_directory, config)
-        pull_revolut_helper(driver, download_directory, config)
 
 
 def extract_bcge_credentials(config: dict) -> bcge.Credentials:

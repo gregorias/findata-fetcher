@@ -66,6 +66,6 @@ async def download_transaction_history(page: playwright.async_api.Page,
     :rtype None
     """
     await login(page, creds)
-    async with asyncio.timeout(20):  # type: ignore
+    async with asyncio.timeout(20):
         async with preserve_new_file(download_dir):
             await trigger_transaction_history_export(page)

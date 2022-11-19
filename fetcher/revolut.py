@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Fetches account statements from Revolut."""
+import asyncio
 from datetime import date, timedelta
 import pathlib
 from typing import NamedTuple
@@ -123,7 +124,7 @@ async def download_statements(page: playwright.async_api.Page,
     await login(page, creds)
     await dismiss_cookie_consent_dialog(page)
     for account_no in account_nos:
-        async with asyncio.timeout(20):  # type: ignore
+        async with asyncio.timeout(20):
             async with preserve_new_file(download_dir):
                 await download_statement(page,
                                          account_no,
