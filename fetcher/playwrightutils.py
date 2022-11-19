@@ -1,5 +1,6 @@
 """A collection of utilities for working with Playwright."""
 
+import asyncio
 import contextlib
 import os
 import pathlib
@@ -20,8 +21,12 @@ def playwright_cookie_jar_to_requests_cookies(
     return {c['name']: c['value'] for c in playwright_cookies}
 
 
-@contextlib.contextmanager
-def new_file_preserver(dir: pathlib.Path):
+# Using an async context manager, because it's more natural:
+# * The client can now define the timeout using an orthogonal asyncio.timeout
+# * The client can combine it with other concurrent operations without
+#   blocking.
+@contextlib.asynccontextmanager
+async def preserve_new_file(dir: pathlib.Path):
     """
     A context manager that preserves a file downloaded in a Playwright session.
 
@@ -32,7 +37,7 @@ def new_file_preserver(dir: pathlib.Path):
     """
     old_dirs = set(os.listdir(dir))
     yield None
-    for _ in range(20):
+    while True:
         new_dirs = set(os.listdir(dir))
         if len(new_dirs) > len(old_dirs):
             new_files = new_dirs.difference(old_dirs)
@@ -42,5 +47,5 @@ def new_file_preserver(dir: pathlib.Path):
                 shutil.copy(dir / nf, dir / (nf + ".csv"))
             break
         else:
-            time.sleep(1)
+            await asyncio.sleep(1)
             continue

@@ -8,7 +8,7 @@ import playwright
 import playwright.async_api
 import requests
 
-from fetcher.playwrightutils import new_file_preserver
+from fetcher.playwrightutils import preserve_new_file
 
 
 class Credentials(NamedTuple):
@@ -123,8 +123,9 @@ async def download_statements(page: playwright.async_api.Page,
     await login(page, creds)
     await dismiss_cookie_consent_dialog(page)
     for account_no in account_nos:
-        with new_file_preserver(download_dir):
-            await download_statement(page,
-                                     account_no,
-                                     from_my=date_to_month_year(
-                                         three_months_ago(date.today())))
+        async with asyncio.timeout(20):  # type: ignore
+            async with preserve_new_file(download_dir):
+                await download_statement(page,
+                                         account_no,
+                                         from_my=date_to_month_year(
+                                             three_months_ago(date.today())))

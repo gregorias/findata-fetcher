@@ -1,11 +1,12 @@
 """Charles Schwab browser automation tools."""
+import asyncio
 import pathlib
 from typing import NamedTuple
 
 import playwright
 import playwright.async_api
 
-from fetcher.playwrightutils import new_file_preserver
+from fetcher.playwrightutils import preserve_new_file
 
 
 class Credentials(NamedTuple):
@@ -65,5 +66,6 @@ async def download_transaction_history(page: playwright.async_api.Page,
     :rtype None
     """
     await login(page, creds)
-    with new_file_preserver(download_dir):
-        await trigger_transaction_history_export(page)
+    async with asyncio.timeout(20):  # type: ignore
+        async with preserve_new_file(download_dir):
+            await trigger_transaction_history_export(page)
