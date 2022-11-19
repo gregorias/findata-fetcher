@@ -3,7 +3,7 @@ import pathlib
 from typing import NamedTuple
 
 import playwright
-import playwright.sync_api
+import playwright.async_api
 
 from fetcher.playwrightutils import new_file_preserver
 
@@ -13,13 +13,14 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-def trigger_transaction_history_export(page: playwright.sync_api.Page):
-    page.goto('https://client.schwab.com/app/accounts/transactionhistory/#/')
-    with page.expect_popup() as popup_info:
-        page.locator("#bttnExport button").click()
-    popup = popup_info.value
+async def trigger_transaction_history_export(page: playwright.async_api.Page):
+    await page.goto(
+        'https://client.schwab.com/app/accounts/transactionhistory/#/')
+    async with page.expect_popup() as popup_info:
+        await page.locator("#bttnExport button").click()
+    popup = await popup_info.value
     try:
-        popup.locator(
+        await popup.locator(
             '#ctl00_WebPartManager1_wpExportDisclaimer_ExportDisclaimer_btnOk'
         ).click()
     except playwright._impl._api_types.Error as e:  # type: ignore
@@ -29,40 +30,40 @@ def trigger_transaction_history_export(page: playwright.sync_api.Page):
         # click. It doesn't interfere with the download so, just ignore it.
 
 
-def login(page: playwright.sync_api.Page, creds: Credentials) -> None:
+async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     """Logs in to Charles Schwab.
 
     Returns once the authentication process finishes. The page will contain
     Charles Schwab's dashboard.
 
-    :param page playwright.sync_api.Page: A blank page.
+    :param page playwright.async_api.Page: A blank page.
     :param creds Credentials
     :rtype None
     """
-    page.goto(
+    await page.goto(
         'https://client.schwab.com/Login/SignOn/CustomerCenterLogin.aspx')
-    page.locator("#loginIdInput:focus")
-    page.locator("#passwordInput")
-    page.keyboard.type(creds.id)
-    page.keyboard.press('Tab')
-    page.keyboard.type(creds.pwd)
-    page.keyboard.press('Enter')
-    page.locator('#placeholderCode').focus()
-    page.wait_for_url('https://client.schwab.com/clientapps/**')
+    await page.frame_locator('#lmsSecondaryLogin').get_by_placeholder(
+        'Login ID').focus()
+    await page.keyboard.type(creds.id)
+    await page.keyboard.press('Tab')
+    await page.keyboard.type(creds.pwd)
+    await page.keyboard.press('Enter')
+    await page.locator('#placeholderCode').focus()
+    await page.wait_for_url('https://client.schwab.com/clientapps/**')
 
 
-def download_transaction_history(page: playwright.sync_api.Page,
-                                 creds: Credentials,
-                                 download_dir: pathlib.Path) -> None:
+async def download_transaction_history(page: playwright.async_api.Page,
+                                       creds: Credentials,
+                                       download_dir: pathlib.Path) -> None:
     """
     Downloads Charles Schwab's transaction history.
 
-    :param page playwright.sync_api.Page: A blank page.
+    :param page playwright.async_api.Page: A blank page.
     :param creds Credentials
     :param download_dir pathlib.Path:
         The download directory used by the browser.
     :rtype None
     """
-    login(page, creds)
+    await login(page, creds)
     with new_file_preserver(download_dir):
-        trigger_transaction_history_export(page)
+        await trigger_transaction_history_export(page)

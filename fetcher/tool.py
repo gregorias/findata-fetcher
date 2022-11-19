@@ -5,6 +5,7 @@ Fetch my accounting data into a CSV file.
 Usage: python -m fetcher.tool --help
 """
 
+import asyncio
 from contextlib import contextmanager
 import csv
 import datetime
@@ -22,6 +23,7 @@ from selenium import webdriver  # type: ignore
 from selenium.webdriver.firefox.service import Service as FirefoxService  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
 from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 import click
 
 from . import bcge
@@ -144,13 +146,17 @@ def pull_cs_account_history(ctx, download_directory) -> None:
     """
     config = read_config_from_context(ctx)
     download_directory = Path(download_directory)
-    with sync_playwright() as pw:
-        browser = pw.firefox.launch(headless=False,
-                                    downloads_path=download_directory)
-        cs.download_transaction_history(browser.new_page(),
-                                        extract_cs_credentials(config),
-                                        download_directory)
-        browser.close()
+
+    async def run():
+        async with async_playwright() as pw:
+            browser = await pw.firefox.launch(
+                headless=False, downloads_path=download_directory)
+            await cs.download_transaction_history(
+                await browser.new_page(), extract_cs_credentials(config),
+                download_directory)
+            await browser.close()
+
+    asyncio.run(run())
 
 
 @cli.command()
