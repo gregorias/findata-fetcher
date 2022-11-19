@@ -36,16 +36,19 @@ async def preserve_new_file(dir: pathlib.Path):
     :param dir pathlib.Path: The downloads directory used by Playwright.
     """
     old_dirs = set(os.listdir(dir))
-    yield None
-    while True:
-        new_dirs = set(os.listdir(dir))
-        if len(new_dirs) > len(old_dirs):
-            new_files = new_dirs.difference(old_dirs)
-            for nf in new_files:
-                # We need to copy the file, because playwright deletes
-                # downloaded files on browser close.
-                shutil.copy(dir / nf, dir / (nf + ".csv"))
-            break
-        else:
-            await asyncio.sleep(1)
-            continue
+    async def wait_for_new_file():
+        while True:
+            new_dirs = set(os.listdir(dir))
+            if len(new_dirs) > len(old_dirs):
+                new_files = new_dirs.difference(old_dirs)
+                for nf in new_files:
+                    # We need to copy the file, because playwright deletes
+                    # downloaded files on browser close.
+                    shutil.copy(dir / nf, dir / (nf + ".csv"))
+                break
+            else:
+                await asyncio.sleep(1)
+                continue
+    wait_for_new_file_task = asyncio.create_task(wait_for_new_file())
+    yield wait_for_new_file_task
+    await wait_for_new_file_task

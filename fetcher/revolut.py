@@ -86,12 +86,16 @@ def monthYearToRevolutLabel(my: MonthYear) -> str:
     return f"{months[my.month]} {my.year}"
 
 
-async def download_statement(page: playwright.async_api.Page, account_no: str,
+async def download_statement(page: playwright.async_api.Page,
+                             file_downloaded_event,
+                             account_no: str,
                              from_my: MonthYear):
     """
     Downloads a single statement.
 
     :param page playwright.async_api.Page
+    :param file_downloaded_event: an awaitable that returns when the CSV file
+                                  has been downloaded.
     :param account_no str
     :param from_my MonthYear
     """
@@ -103,10 +107,14 @@ async def download_statement(page: playwright.async_api.Page, account_no: str,
                        ).click()
     await page.locator("//button/span[normalize-space(text()) = 'Generate']"
                        ).click()
-    # TODO: Handle a case where the file may be already generated and
-    # downloaded.
-    await page.locator("//button[normalize-space(text()) = 'Download']"
-                       ).click()
+    download_task = asyncio.create_task(page.locator("//button[normalize-space(text()) = 'Download']").click())
+    done, pending = await asyncio.wait([
+       file_downloaded_event, download_task
+    ],
+        return_when=asyncio.FIRST_COMPLETED
+    )
+    for p in pending:
+        p.cancel()
 
 
 async def download_statements(page: playwright.async_api.Page,
@@ -130,8 +138,9 @@ async def download_statements(page: playwright.async_api.Page,
         pass
     for account_no in account_nos:
         async with asyncio.timeout(20):
-            async with preserve_new_file(download_dir):
+            async with preserve_new_file(download_dir) as file_downloaded_event:
                 await download_statement(page,
+                                         file_downloaded_event,
                                          account_no,
                                          from_my=date_to_month_year(
                                              three_months_ago(date.today())))
