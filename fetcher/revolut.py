@@ -40,7 +40,7 @@ async def dismiss_cookie_consent_dialog(
         page: playwright.async_api.Page) -> None:
     await page.locator(
         "//button/span[normalize-space(text()) = 'Allow all cookies']"
-    ).click()
+    ).click(timeout=0)
 
 
 class MonthYear(NamedTuple):
@@ -122,7 +122,12 @@ async def download_statements(page: playwright.async_api.Page,
     :rtype None
     """
     await login(page, creds)
-    await dismiss_cookie_consent_dialog(page)
+    try:
+        async with asyncio.timeout(5):
+            await dismiss_cookie_consent_dialog(page)
+    except asyncio.TimeoutError:
+        # If there's no cookie consent dialog, then just proceed.
+        pass
     for account_no in account_nos:
         async with asyncio.timeout(20):
             async with preserve_new_file(download_dir):
