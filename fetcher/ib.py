@@ -2,6 +2,7 @@
 """Interactive Brokers interface."""
 import base64
 import datetime
+import dataclasses
 from decimal import Decimal
 from enum import Enum
 import json
@@ -24,6 +25,40 @@ from .driverutils import (driver_cookie_jar_to_requests_cookies, get_parent,
 class Credentials(NamedTuple):
     id: str
     pwd: str
+
+
+class WireInstructions(NamedTuple):
+    to_beneficiary_title: str
+    bank_account_number: str
+    aba_routing_number: str
+    swift_bic_code: str
+    beneficiary_bank: str
+
+
+def wire_instructions(csv: dict[str, str]) -> WireInstructions:
+    """
+    Constructs WireInstructions from the dict returned by `set_up_deposit`.
+
+    :param csv dict[str, str]
+    :rtype WireInstructions
+    """
+    to_beneficiary_title = csv.get("Wire Funds to Beneficiary/Account Title")
+    bank_account_number = csv.get("Bank Account Number")
+    aba_routing_number = csv.get("ABA Routing Number")
+    swift_bic_code = csv.get("SWIFT/BIC Code")
+    beneficiary_bank = csv.get("Beneficiary Bank")
+
+    if (to_beneficiary_title is None or bank_account_number is None
+            or aba_routing_number is None or swift_bic_code is None
+            or beneficiary_bank is None):
+        raise Exception(
+            "Could not find one or more required fields for wire instructions."
+        )
+    return WireInstructions(to_beneficiary_title=to_beneficiary_title,
+                            bank_account_number=bank_account_number,
+                            aba_routing_number=aba_routing_number,
+                            swift_bic_code=swift_bic_code,
+                            beneficiary_bank=beneficiary_bank)
 
 
 def login(driver: webdriver.remote.webdriver.WebDriver,
