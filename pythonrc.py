@@ -62,6 +62,13 @@ class Browser(Enum):
     CHROMIUM = 2
 
 
+l = asyncio.new_event_loop()
+
+
+def ruc(a):
+    return l.run_until_complete(a)
+
+
 async def start_playwright(
     browser_spec: Browser = Browser.FIREFOX
 ) -> tuple[playwright.async_api.Playwright, playwright.async_api.Browser,

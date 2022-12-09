@@ -16,6 +16,7 @@ import logging
 from os import path
 from pathlib import Path, PurePath
 import tempfile
+import typing
 import shutil
 import sys
 
@@ -131,6 +132,49 @@ def pull_coop_supercard(ctx) -> None:
 
 
 @cli.command()
+@click.pass_context
+@click.option('--amount', required=True)
+@click.argument('wire_instructions_csv', type=click.File('r'))
+def cs_send_wire_to_ib(ctx, amount: str,
+                       wire_instructions_csv: typing.TextIO) -> None:
+    """Sends a wire transfor to Interactive Brokers.
+
+    Example use:
+
+        cs-send-wire-to-ib --amount=21.37 WIRE_INSTRUCTIONS_CSV
+    """
+    config = read_config_from_context(ctx)
+    ffc_config = config['cs_ib_for_further_credit_instructions']
+
+    wire_instructions_ib = ib.wire_instructions(
+        decode_ib_wire_instructions(wire_instructions_csv))
+    wire_instructions_cs = cs.WireInstructions(
+        amount=amount,
+        bank_routing_number=wire_instructions_ib.aba_routing_number,
+        beneficiary_account_number=wire_instructions_ib.bank_account_number,
+        for_further_credit=cs.ForFurtherCreditInstructions(
+            account_number=ffc_config['account_number'],
+            address=ffc_config['address'],
+            city_and_state=ffc_config['city_and_state'],
+            country=ffc_config['country'],
+            name=ffc_config['name'],
+            notes=ffc_config['notes'],
+        ),
+    )
+
+    async def run():
+        async with async_playwright() as pw:
+            browser = await pw.firefox.launch(headless=False)
+            page = await browser.new_page()
+            await cs.send_wire_to_ib(page, extract_cs_credentials(config),
+                                     wire_instructions_cs)
+            await page.pause()
+            await browser.close()
+
+    asyncio.run(run())
+
+
+@cli.command()
 @click.option(
     '--download-directory',
     required=True,
@@ -230,6 +274,19 @@ def pull_finpension_helper(driver: webdriver.remote.webdriver.WebDriver,
         f.write(
             finpension.fetch_data(extract_finpension_credentials(config),
                                   extract_gmail_credentials(config), driver))
+
+
+def decode_ib_wire_instructions(csvf: typing.TextIO) -> dict[str, str]:
+    """
+    Decodes IB wire instructions
+
+    :param csv typing.TextIO
+    :rtype dict[str, str]
+    """
+    result = dict()
+    for row in csv.DictReader(csvf):
+        result[row['key']] = row['value']
+    return result
 
 
 @cli.command()
