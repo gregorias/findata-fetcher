@@ -341,11 +341,11 @@ def pull_ib(ctx) -> None:
 @cli.command()
 @click.pass_context
 def pull_mbank(ctx) -> None:
-    """Fetches Mbank data into a CSV file."""
+    """Fetches mBank's data and outputs a CSV file."""
     config = read_config_from_context(ctx)
-    download_directory = PurePath(config['download_directory'])
     with getFirefoxDriver() as driver:
-        pull_mbank_helper(driver, download_directory, config)
+        sys.stdout.buffer.write(
+            mbank.fetch_mbank_data(driver, extract_mbank_credentials(config)))
 
 
 def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
