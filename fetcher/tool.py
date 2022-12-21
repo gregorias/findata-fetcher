@@ -248,32 +248,21 @@ def pull_easyride_receipts(ctx) -> None:
 @cli.command()
 @click.pass_context
 def pull_finpension(ctx) -> None:
-    """Fetches Finpension transactions into a CSV file."""
+    """Prints Finpension's portfolio total.
+
+    It will print a line with the value like "12123.12\n"."""
     config = read_config_from_context(ctx)
-    download_directory = PurePath(config['download_directory'])
-    with getFirefoxDriver() as driver:
-        pull_finpension_helper(driver, download_directory, config)
 
+    async def run():
+        async with async_playwright() as pw:
+            browser = await pw.firefox.launch(headless=False)
+            page = await browser.new_page()
+            await finpension.login(page,
+                                   extract_finpension_credentials(config))
+            value = await finpension.fetch_current_total(page)
+            print(value)
 
-@cli.command()
-@click.pass_context
-def pull_finpension_portfolio_total(ctx) -> None:
-    """Fetches Finpension portfolio total and outputs it to stdout."""
-    config = read_config_from_context(ctx)
-    with getFirefoxDriver() as driver:
-        totals = finpension.fetch_portfolio_total(
-            extract_finpension_credentials(config), driver)
-        for t in totals:
-            print(t)
-
-
-def pull_finpension_helper(driver: webdriver.remote.webdriver.WebDriver,
-                           download_directory: PurePath, config: dict) -> None:
-    with open_and_save_on_success(download_directory / 'finpension.csv',
-                                  'wb') as f:
-        f.write(
-            finpension.fetch_data(extract_finpension_credentials(config),
-                                  extract_gmail_credentials(config), driver))
+    asyncio.run(run())
 
 
 def decode_ib_wire_instructions(csvf: typing.TextIO) -> dict[str, str]:
@@ -454,8 +443,8 @@ def extract_degiro_credentials(config: dict) -> degiro.Credentials:
 
 
 def extract_finpension_credentials(config: dict) -> finpension.Credentials:
-    return finpension.Credentials(id=config['finpension_id'],
-                                  pwd=config['finpension_pwd'])
+    return finpension.Credentials(phone_number=config['finpension_id'],
+                                  password=config['finpension_pwd'])
 
 
 def extract_ib_credentials(config: dict) -> ib.Credentials:
