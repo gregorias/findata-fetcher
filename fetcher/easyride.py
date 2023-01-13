@@ -21,6 +21,8 @@ def fetch_and_archive_receipts(creds: gmail.Credentials,
             imap, "EasyRide Kaufquittung")
         receipt_mail_numbers.extend(
             gmail.search_for_inbox_mails(imap, "EasyRide Quittung"))
+        receipt_mail_numbers.extend(
+            gmail.search_for_inbox_mails(imap, "EasyRide receipt"))
         for receipt_mail_no in receipt_mail_numbers:
             msg = gmail.fetch_mail(imap, receipt_mail_no)
             pdf_part = list(msg.walk())[4]
