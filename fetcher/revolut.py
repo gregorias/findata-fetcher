@@ -27,20 +27,39 @@ async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     :rtype None
     """
     await page.goto('https://app.revolut.com/start')
+
+    country = page.locator('input#downshift-0-input')
+    await country.clear()
+    await country.type(creds.country_code)
+    await page.keyboard.press('Enter')
+
     await page.locator('input[name="phoneNumber"]').focus()
     await page.keyboard.type(creds.phone_number)
     await page.keyboard.press('Tab')
     await page.keyboard.press('Enter')
     await page.locator('input[pattern="[0-9]"]').first.focus()
-    await page.keyboard.type(creds.pin)
+    # Type each PIN digit individually. I couldn't get this to work with the
+    # entire PIN at once.
+    for c in creds.pin:
+        await page.keyboard.type(c)
     await page.wait_for_url('https://app.revolut.com/home')
+
+
+async def accept_cookies_on_revolut(page: playwright.async_api.Page) -> None:
+    await page.goto('https://app.revolut.com')
+    try:
+        async with asyncio.timeout(15):
+            await dismiss_cookie_consent_dialog(page)
+    except asyncio.TimeoutError:
+        # If there's no cookie consent dialog, then just proceed.
+        pass
 
 
 async def dismiss_cookie_consent_dialog(
         page: playwright.async_api.Page) -> None:
     await page.locator(
-        "//button/span[normalize-space(text()) = 'Allow all cookies']"
-    ).click(timeout=0)
+        "//button/span[normalize-space(text()) = 'Allow all cookies']").click(
+            timeout=0)
 
 
 class MonthYear(NamedTuple):
@@ -87,8 +106,7 @@ def monthYearToRevolutLabel(my: MonthYear) -> str:
 
 
 async def download_statement(page: playwright.async_api.Page,
-                             file_downloaded_event,
-                             account_no: str,
+                             file_downloaded_event, account_no: str,
                              from_my: MonthYear):
     """
     Downloads a single statement.
@@ -103,16 +121,28 @@ async def download_statement(page: playwright.async_api.Page,
     await page.locator("//button[normalize-space(text()) = 'Excel']").click()
     await page.locator("//div[normalize-space(text()) = 'Starting on']/.."
                        ).click()
+
+    async def get_current_selected_year() -> int | None:
+        year_string = await page.locator('div[role="grid"] [role="heading"]'
+                                         ).text_content()
+        if not year_string:
+            return None
+        return int(year_string)
+
+    current_selected_year = await get_current_selected_year()
+
+    while current_selected_year and current_selected_year > from_my.year:
+        await page.locator('button[aria-label= "Previous"]').click()
+        current_selected_year = await get_current_selected_year()
+
     await page.locator(f'div[aria-label="{monthYearToRevolutLabel(from_my)}"]'
                        ).click()
     await page.locator("//button/span[normalize-space(text()) = 'Generate']"
                        ).click()
-    download_task = asyncio.create_task(page.locator("//button[normalize-space(text()) = 'Download']").click())
-    done, pending = await asyncio.wait([
-       file_downloaded_event, download_task
-    ],
-        return_when=asyncio.FIRST_COMPLETED
-    )
+    download_task = asyncio.create_task(
+        page.locator("//button[normalize-space(text()) = 'Download']").click())
+    done, pending = await asyncio.wait([file_downloaded_event, download_task],
+                                       return_when=asyncio.FIRST_COMPLETED)
     for p in pending:
         p.cancel()
 
@@ -129,16 +159,12 @@ async def download_statements(page: playwright.async_api.Page,
     :param account_nos list[str]
     :rtype None
     """
+    await accept_cookies_on_revolut(page)
     await login(page, creds)
-    try:
-        async with asyncio.timeout(5):
-            await dismiss_cookie_consent_dialog(page)
-    except asyncio.TimeoutError:
-        # If there's no cookie consent dialog, then just proceed.
-        pass
     for account_no in account_nos:
-        async with asyncio.timeout(20):
-            async with preserve_new_file(download_dir) as file_downloaded_event:
+        async with asyncio.timeout(80):
+            async with preserve_new_file(
+                    download_dir) as file_downloaded_event:
                 await download_statement(page,
                                          file_downloaded_event,
                                          account_no,
