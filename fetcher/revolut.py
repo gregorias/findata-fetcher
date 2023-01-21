@@ -141,8 +141,10 @@ async def download_statement(page: playwright.async_api.Page,
                        ).click()
     download_task = asyncio.create_task(
         page.locator("//button[normalize-space(text()) = 'Download']").click())
-    done, pending = await asyncio.wait([file_downloaded_event, download_task],
-                                       return_when=asyncio.FIRST_COMPLETED)
+    done, pending = await asyncio.wait(
+        [asyncio.shield(file_downloaded_event),
+         asyncio.shield(download_task)],
+        return_when=asyncio.FIRST_COMPLETED)
     for p in pending:
         p.cancel()
 
