@@ -50,8 +50,6 @@ This section is meant for developers and provides instruction on how to work wit
 
 ### Dev Environment Setup
 
-### Dev Environment Setup
-
 This project requires [Lefthook](https://github.com/evilmartians/lefthook) and
 [Commitlint](https://github.com/conventional-changelog/commitlint).
 
