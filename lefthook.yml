@@ -5,6 +5,14 @@ pre-commit:
   commands:
     unit-tests:
       run: "./dev/bin/testall"
+    toml-taplo:
+      tags: style
+      glob: "*.toml"
+      run: taplo check {staged_files}
+    yaml-prettier:
+      tags: style
+      glob: "*.{yml,yaml}"
+      run: prettier -c {staged_files}
 commit-msg:
   commands:
     commitlint:
