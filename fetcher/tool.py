@@ -121,7 +121,7 @@ def pull_coop_supercard(ctx) -> None:
     config = ctx.obj['config']
     service = FirefoxService(log_path=path.devnull)
     opts = webdriver.FirefoxOptions()
-    opts.headless = True
+    opts.add_argument('-headless')
     with webdriver.Firefox(options=opts, service=service) as driver:
         coop_supercard.fetch_and_save_receipts(
             driver,
