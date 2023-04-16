@@ -1,7 +1,4 @@
 pre-commit:
-  scripts:
-    "format-files.bash":
-      runner: bash
   commands:
     unit-tests:
       run: "./dev/bin/testall"
@@ -13,6 +10,10 @@ pre-commit:
       tags: style
       glob: "*.{yml,yaml}"
       run: prettier -c {staged_files}
+    yapf:
+      tags: style
+      glob: "*.py"
+      run: pipenv run yapf -i -r {staged_files} && git add {staged_files}
 commit-msg:
   commands:
     commitlint:
