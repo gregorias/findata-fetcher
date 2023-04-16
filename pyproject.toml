@@ -35,7 +35,6 @@ playwright = "^1.32.1"
 [tool.poetry.group.dev.dependencies]
 bpython = "^0.24"
 flake8 = "*"
-yapf = "*"
 isort = "*"
 coverage = "*"
 mypy = "*"

@@ -13,7 +13,7 @@ pre-commit:
     yapf:
       tags: style
       glob: "*.py"
-      run: pipenv run yapf -i -r {staged_files} && git add {staged_files}
+      run: yapf -i -r {staged_files} && git add {staged_files}
 commit-msg:
   commands:
     commitlint:
