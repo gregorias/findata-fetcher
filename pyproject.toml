@@ -1,6 +1,50 @@
-[build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
+[project]
+requires-python = ">=3.11.3"
+
+[tool.poetry]
+name = "findata-fetcher"
+version = "2.1.0"
+authors = ["Grzegorz Milka <grzegorzmilka@gmail.com>"]
+description = "A tool that downloads financial statements from various sites."
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+  "Operating System :: OS Independent",
 ]
-build-backend = "setuptools.build_meta"
+license = "AGPLv3"
+readme = "README.md"
+packages = [{ include = "fetcher" }]
+
+[tool.poetry.scripts]
+findata-fetcher = "fetcher.tool:main"
+
+[tool.poetry.urls]
+Repository = "https://github.com/gregorias/findata-fetcher"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+beautifulsoup4 = "^4.10"
+click = "^8"
+CurrencyConverter = "^0.17.6"
+requests = "^2.28.2"
+selenium = "^4.8.3"
+selenium-wire = "^5.1.0"
+splitwise = "^2.5.0"
+playwright = "^1.32.1"
+
+[tool.poetry.group.dev.dependencies]
+bpython = "^0.24"
+flake8 = "*"
+yapf = "*"
+isort = "*"
+coverage = "*"
+mypy = "*"
+types-requests = "==2.25.*"
+packaging = "*"
+pip = "*"
+rope = "*"
+autopep8 = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
