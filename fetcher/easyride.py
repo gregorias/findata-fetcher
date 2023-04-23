@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """This module EasyRide Quittung from Gmail."""
+import contextlib
 from email.header import decode_header
 from pathlib import PurePath
 from imaplib import IMAP4
@@ -16,15 +17,12 @@ def save_file(file_part, target_dir: PurePath) -> None:
 
 def fetch_and_archive_receipts(creds: gmail.Credentials,
                                download_dir: PurePath) -> None:
-    with gmail.connect(creds) as imap:
-        receipt_mail_numbers = gmail.search_for_inbox_mails(
-            imap, "EasyRide Kaufquittung")
-        receipt_mail_numbers.extend(
-            gmail.search_for_inbox_mails(imap, "EasyRide Quittung"))
-        receipt_mail_numbers.extend(
-            gmail.search_for_inbox_mails(imap, "EasyRide receipt"))
+    with contextlib.closing(gmail.connect(creds)) as inbox:
+        receipt_mail_numbers = inbox.search_inbox("EasyRide Kaufquittung")
+        receipt_mail_numbers.extend(inbox.search_inbox("EasyRide Quittung"))
+        receipt_mail_numbers.extend(inbox.search_inbox("EasyRide receipt"))
         for receipt_mail_no in receipt_mail_numbers:
-            msg = gmail.fetch_mail(imap, receipt_mail_no)
+            msg = inbox.fetch(receipt_mail_no)
             pdf_part = list(msg.walk())[4]
             save_file(pdf_part, download_dir)
-            gmail.archive_mail(imap, receipt_mail_no)
+            inbox.archive(receipt_mail_no)

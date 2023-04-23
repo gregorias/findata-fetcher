@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """This module fetches the Patreon monthly receipt email."""
+import contextlib
 import email.message
 from pathlib import PurePath
 from imaplib import IMAP4
@@ -27,11 +28,11 @@ def save_file(content, target_dir: PurePath) -> None:
 
 def fetch_and_archive_receipts(creds: gmail.Credentials,
                                download_dir: PurePath) -> None:
-    with gmail.connect(creds) as imap:
-        receipt_mail_numbers = gmail.search_for_inbox_mails(
-            imap, "Your Patreon receipt is here")
+    with contextlib.closing(gmail.connect(creds)) as inbox:
+        receipt_mail_numbers = inbox.search_inbox(
+            "Your Patreon receipt is here")
         for receipt_mail_number in receipt_mail_numbers:
-            msg = gmail.fetch_mail(imap, receipt_mail_number)
+            msg = inbox.fetch(receipt_mail_number)
             payload = get_text_payload(msg)
             save_file(payload, download_dir)
-            gmail.archive_mail(imap, receipt_mail_number)
+            inbox.archive(receipt_mail_number)

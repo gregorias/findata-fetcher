@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """This module fetches the Uber Eats bill email."""
+import contextlib
 import email.message
 import quopri
-from imaplib import IMAP4
 from pathlib import PurePath
 from typing import Generator, List, Tuple
 
@@ -27,13 +27,12 @@ def get_payments_string(soup) -> str:
 
 def fetch_and_archive_bills(
         creds: gmail.Credentials) -> Generator[Tuple[str, str], None, None]:
-    with gmail.connect(creds) as imap:
-        receipt_mail_numbers = gmail.search_for_inbox_mails(
-            imap, "order with Uber Eats")
+    with contextlib.closing(gmail.connect(creds)) as inbox:
+        receipt_mail_numbers = inbox.search_inbox("order with Uber Eats")
         for receipt_mail_number in receipt_mail_numbers:
-            msg = gmail.fetch_mail(imap, receipt_mail_number)
+            msg = inbox.fetch(receipt_mail_number)
             html_page = quopri.decodestring(
                 get_html_payload(msg).encode('ascii'))
             soup = BeautifulSoup(html_page, features='html.parser')
             yield (msg['Date'], get_payments_string(soup))
-            gmail.archive_mail(imap, receipt_mail_number)
+            inbox.archive(receipt_mail_number)

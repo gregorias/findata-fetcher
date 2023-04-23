@@ -6,6 +6,7 @@ Usage: python -m fetcher.tool --help
 """
 
 import asyncio
+import contextlib
 from contextlib import contextmanager
 import csv
 import datetime
@@ -34,8 +35,8 @@ from . import degiro
 from . import easyride
 from . import finpension
 from . import galaxus
-from . import ib
 from . import gmail
+from . import ib
 from . import mbank
 from . import patreon
 from . import revolut
@@ -397,10 +398,12 @@ def pull_galaxus(ctx) -> None:
     """Fetches Digitec-Galaxus receipts in text format."""
     config = ctx.obj['config']
     download_directory = PurePath(config['download_directory'])
-    for title, content in galaxus.fetch_and_archive_bills(
-            extract_gmail_credentials(config)):
-        with open(download_directory / (title + '.galaxus'), 'w') as f:
-            f.write(content)
+    gmail_creds = extract_gmail_credentials(config)
+    with contextlib.closing(gmail.connect(gmail_creds)) as inbox:
+        for bill in galaxus.fetch_and_archive_bills(inbox):
+            with open(download_directory / (bill.subject + '.galaxus'),
+                      'w') as f:
+                f.write(bill.payload)
 
 
 @cli.command()

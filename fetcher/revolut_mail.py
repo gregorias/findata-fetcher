@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """This module fetches the Revolut statements shared on Gmail."""
+import contextlib
 import email
 from email.header import decode_header
 from pathlib import PurePath
@@ -23,14 +24,14 @@ def get_revolut_statement_part(
     return None
 
 
-def get_revolut_mail_numbers(imap: IMAP4) -> List[bytes]:
+def get_revolut_mail_numbers(inbox: gmail.Gmail) -> List[bytes]:
     """Returns mail numbers containing a Revolut statement."""
-    all_emails = gmail.get_all_inbox_mails(imap)
+    all_emails = gmail.get_all_inbox_mails(inbox.imap)
     if all_emails is None:
         raise Exception("Could not fetch the email list from gMail.")
     revolut_emails = []
     for email_no in all_emails:
-        msg = gmail.fetch_mail(imap, email_no)
+        msg = inbox.fetch(email_no)
         if get_revolut_statement_part(msg):
             revolut_emails.append(email_no)
     return revolut_emails
@@ -45,10 +46,10 @@ def save_file(file_part, target_dir: PurePath) -> None:
 
 def fetch_and_archive_statements(creds: gmail.Credentials,
                                  download_dir: PurePath) -> None:
-    with gmail.connect(creds) as imap:
-        revolut_mail_numbers = get_revolut_mail_numbers(imap)
+    with contextlib.closing(gmail.connect(creds)) as inbox:
+        revolut_mail_numbers = get_revolut_mail_numbers(inbox)
         for revolut_mail_no in revolut_mail_numbers:
-            msg = gmail.fetch_mail(imap, revolut_mail_no)
+            msg = inbox.fetch(revolut_mail_no)
             csv_part = get_revolut_statement_part(msg)
             save_file(csv_part, download_dir)
-            gmail.archive_mail(imap, revolut_mail_no)
+            inbox.archive(revolut_mail_no)
