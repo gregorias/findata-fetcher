@@ -44,11 +44,15 @@ def get_payload(msg: email.message.Message) -> str:
     if not bill_entries_element:
         raise Exception('Could not find bill entries element')
 
-    return '\n'.join([
+    entries = '\n'.join([
         l
         for l in bill_entries_element.get_text('\n', strip=True).splitlines()
         if l != '-'
     ])
+    payment = [
+        t for t in soup.find_all('table') if 'Zahlungsmittel' in t.text
+    ][-1].get_text(':')
+    return entries + '\n\n' + payment + '\n'
 
 
 @dataclasses.dataclass

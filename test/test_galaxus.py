@@ -65,6 +65,9 @@ class GalaxusTestCase(unittest.TestCase):
             CO2-Kompensation
             0.36
             Gesamtbetrag
-            134.06"""))
+            134.06
+
+            Zahlungsmittel:PayPal
+            """))
         for entry in inbox.entries:
             self.assertEqual(entry.state, fake_inbox.ENTRY_STATE.ARCHIVE)
