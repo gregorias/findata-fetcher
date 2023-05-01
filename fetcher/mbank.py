@@ -57,9 +57,20 @@ def download_request_json_payload(from_date: datetime.date,
     }
 
 
+def check_decoding(bs: bytes, encoding: str) -> bool:
+    try:
+        bs.decode(encoding)
+        return True
+    except UnicodeDecodeError:
+        return False
+
+
 def transform_and_strip_mbanks_csv(raw_csv: bytes) -> bytes:
-    raw_csv = raw_csv[raw_csv.find(b'#Data'):]
-    csv = raw_csv.decode('cp1250')
+    if check_decoding(raw_csv, 'utf-8'):
+        csv = raw_csv.decode('utf-8')
+    else:
+        csv = raw_csv.decode('cp1250')
+    csv = csv[csv.find('#Data'):]
     csv = csv.replace('\r\n', '\n')
     # Remove two newlines at the end
     csv = csv[:-2]
@@ -104,4 +115,6 @@ def fetch_mbank_data(driver: webdriver.remote.webdriver.WebDriver,
     """
     login_to_mbank(creds, driver)
     csv = fetch_all_transactions_since_2018(driver)
+    with open('/Users/grzesiek/Downloads/example.csv', 'wb') as f:
+        f.write(csv)
     return transform_and_strip_mbanks_csv(csv)

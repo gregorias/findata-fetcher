@@ -1,12 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import datetime
+from os import path
+import pathlib
 import unittest
 
 from fetcher import mbank
 
 
+def testdata_dir() -> pathlib.Path:
+    test_dir = pathlib.Path(path.dirname(path.realpath(__file__)))
+    return test_dir / 'data'
+
+
+def read_file(p: pathlib.Path, mode) -> str:
+    with open(p, mode) as f:
+        return f.read()
+
+
 class MbankTestCase(unittest.TestCase):
+
     def test_gives_download_payload(self):
         from_date = datetime.date(2020, 11, 5)
         to_date = datetime.date(2020, 11, 6)
@@ -44,7 +57,7 @@ class MbankTestCase(unittest.TestCase):
             mbank.download_request_json_payload(from_date, to_date),
             expected_payload)
 
-    def test_preprocesses_mbanks_csv(self):
+    def test_preprocesses_mbanks_csv_0(self):
         raw_csv = (
             b'rubbishintro\r\n'
             b'#Data operacji;#Opis operacji;#Rachunek;#Kategoria;#Kwota;#Saldo po operacji;\r\n'
@@ -58,3 +71,11 @@ class MbankTestCase(unittest.TestCase):
 
         self.assertEqual(mbank.transform_and_strip_mbanks_csv(raw_csv),
                          expected_csv)
+
+    def test_preprocesses_mbanks_csv_1(self):
+        input = read_file(
+            f"{testdata_dir()}/mbank-transactions-2023-04-30.csv", 'rb')
+        expected = read_file(
+            f"{testdata_dir()}/mbank-transactions-2023-04-30-output.csv", 'rb')
+
+        self.assertEqual(mbank.transform_and_strip_mbanks_csv(input), expected)

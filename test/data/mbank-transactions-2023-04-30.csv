@@ -1,0 +1,31 @@
+﻿mBank S.A. Bankowość Detaliczna;
+		Skrytka Pocztowa 2108;
+		90-959 Łódź 2;
+		www.mBank.pl;
+		mLinia: 801 300 800;
+		+48 (42) 6 300 800;
+
+
+#Klient;
+JOHN DOE;
+
+Lista operacji;
+
+#Za okres:;
+01.01.2018;30.04.2023;
+
+#zgodnie z wybranymi filtrami wyszukiwania;
+      #dla rachunków:;
+      eKonto - 00000000000000000000000000;
+
+      #Lista nie jest dokumentem w rozumieniu art. 7 Ustawy Prawo Bankowe (Dz. U. Nr 140 z 1997 roku, poz.939 z późniejszymi zmianami), ponieważ operacje można samodzielnie edytować.;
+
+      #Waluta;#Wpływy;#Wydatki;
+PLN;816 786,48;-803 668,72;
+
+#Data operacji;#Opis operacji;#Rachunek;#Kategoria;#Kwota;#Saldo po operacji;
+2023-04-28;"RoŚŁĄ";"eKonto 0000 ... 0000";"Rozrywka - inne";-15,00 PLN;15 107,90 PLN;
+2023-03-28;"RoŚŁĄ";"eKonto 0000 ... 0000";"Rozrywka - inne";-15,00 PLN;15 122,90 PLN;
+2023-02-28;"RoŚŁĄ";"eKonto 0000 ... 0000";"Rozrywka - inne";-15,00 PLN;15 137,90 PLN;
+
+
