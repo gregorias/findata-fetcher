@@ -164,11 +164,9 @@ async def download_statements(page: playwright.async_api.Page,
     await accept_cookies_on_revolut(page)
     await login(page, creds)
     for account_no in account_nos:
-        async with asyncio.timeout(80):
-            async with preserve_new_file(
-                    download_dir) as file_downloaded_event:
-                await download_statement(page,
-                                         file_downloaded_event,
-                                         account_no,
-                                         from_my=date_to_month_year(
-                                             three_months_ago(date.today())))
+        async with preserve_new_file(download_dir) as file_downloaded_event:
+            await download_statement(page,
+                                     file_downloaded_event,
+                                     account_no,
+                                     from_my=date_to_month_year(
+                                         three_months_ago(date.today())))
