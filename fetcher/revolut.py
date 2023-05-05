@@ -28,27 +28,32 @@ async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     """
     await page.goto('https://app.revolut.com/start')
 
-    country = page.locator('input#downshift-0-input')
-    await country.clear()
+    country = page.locator('input[aria-label="Country"]')
+    await country.click()
+    # Let the dropdown appear.
+    await asyncio.sleep(0.5)
     await country.type(creds.country_code)
+    # Let the search results appear.
+    await asyncio.sleep(0.5)
+    await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')
 
     await page.locator('input[name="phoneNumber"]').focus()
     await page.keyboard.type(creds.phone_number)
-    await page.keyboard.press('Tab')
+
+    await page.locator('button[type="submit"]').click()
+
+    await page.locator('input[type="password"]').focus()
+    await page.keyboard.type(creds.pin)
+    await asyncio.sleep(0.5)
     await page.keyboard.press('Enter')
-    await page.locator('input[pattern="[0-9]"]').first.focus()
-    # Type each PIN digit individually. I couldn't get this to work with the
-    # entire PIN at once.
-    for c in creds.pin:
-        await page.keyboard.type(c)
+
     await page.wait_for_url('https://app.revolut.com/home')
 
 
 async def accept_cookies_on_revolut(page: playwright.async_api.Page) -> None:
-    await page.goto('https://app.revolut.com')
     try:
-        async with asyncio.timeout(15):
+        async with asyncio.timeout(5):
             await dismiss_cookie_consent_dialog(page)
     except asyncio.TimeoutError:
         # If there's no cookie consent dialog, then just proceed.
@@ -161,8 +166,8 @@ async def download_statements(page: playwright.async_api.Page,
     :param account_nos list[str]
     :rtype None
     """
-    await accept_cookies_on_revolut(page)
     await login(page, creds)
+    await accept_cookies_on_revolut(page)
     for account_no in account_nos:
         async with preserve_new_file(download_dir) as file_downloaded_event:
             await download_statement(page,

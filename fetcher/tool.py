@@ -361,7 +361,7 @@ def pull_revolut(ctx, download_directory) -> None:
     async def run():
         async with asyncio.timeout(80):
             async with async_playwright() as pw:
-                browser = await pw.chromium.launch(
+                browser = await pw.firefox.launch(
                     headless=False, downloads_path=download_directory)
                 await revolut.download_statements(
                     await browser.new_page(), download_directory,
