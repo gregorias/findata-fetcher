@@ -36,6 +36,7 @@ from . import easyride
 from . import finpension
 from . import galaxus
 from . import gmail
+from . import google_play_mail
 from . import ib
 from . import mbank
 from . import patreon
@@ -403,6 +404,20 @@ def pull_galaxus(ctx) -> None:
     with contextlib.closing(gmail.connect(gmail_creds)) as inbox:
         for bill in galaxus.fetch_and_archive_bills(inbox):
             with open(download_directory / (bill.subject + '.galaxus'),
+                      'w') as f:
+                f.write(bill.payload)
+
+
+@cli.command()
+@click.pass_context
+def pull_google_play_mail(ctx) -> None:
+    """Fetches Google Play receipts in text format."""
+    config = ctx.obj['config']
+    download_directory = PurePath(config['download_directory'])
+    gmail_creds = extract_gmail_credentials(config)
+    with contextlib.closing(gmail.connect(gmail_creds)) as inbox:
+        for bill in google_play_mail.fetch_and_archive_bills(inbox):
+            with open(download_directory / (bill.subject + '.email'),
                       'w') as f:
                 f.write(bill.payload)
 
