@@ -1,17 +1,12 @@
-"""Fetches account data from BCGE"""
-from typing import NamedTuple
-import datetime
-import json
+"""Downloads account statement from BCGE using Playwright."""
+import asyncio
 import logging
+from typing import NamedTuple
 
-from selenium import webdriver  # type: ignore
-from selenium.webdriver.common.by import By  # type: ignore
-from selenium.webdriver.common.keys import Keys  # type: ignore
-from selenium.webdriver.support import expected_conditions  # type: ignore
-from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
-import requests
+import playwright
+import playwright.async_api
 
-from .driverutils import format_date, driver_cookie_jar_to_requests_cookies, get_user_agent
+LOGIN_PAGE = 'https://www.bcge.ch/authen/login?lang=de'
 
 
 class Credentials(NamedTuple):
@@ -19,128 +14,57 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-def login(creds: Credentials,
-          driver: webdriver.remote.webdriver.WebDriver) -> None:
-    LOGIN_PAGE = 'https://www.bcge.ch/authen/login?lang=de'
-    driver.get(LOGIN_PAGE)
-    wait = WebDriverWait(driver, 30)
-    wait.until(
-        expected_conditions.presence_of_element_located((By.ID, 'username')))
-    driver.find_element(By.ID, "username").send_keys(creds.id + Keys.TAB)
-    driver.find_element(By.ID, "password").send_keys(creds.pwd + Keys.RETURN)
+async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
+    """Logs in to Charles Schwab.
 
+    Returns once the authentication process finishes. The page will contain
+    BCGE's dashboard.
 
-def get_account_id(driver: webdriver.remote.webdriver.WebDriver) -> str:
-    wait = WebDriverWait(driver, 30)
-    wait.until(
-        expected_conditions.presence_of_element_located(
-            (By.TAG_NAME, 'iframe')))
-    driver.switch_to.frame(0)
-    try:
-        # We want the page to load fully. Otherwise it seems that statement
-        # fetching doesn't work. That's why we wait for the export icon to
-        # appear and some currency figures, because they appear relatively late
-        # in the loading process.
-        wait.until(
-            expected_conditions.presence_of_element_located(
-                (By.CSS_SELECTOR,
-                 'fin-icon-link[label="Exportieren als PDF"]')))
-        wait.until(
-            expected_conditions.presence_of_element_located(
-                (By.CSS_SELECTOR, 'a.ribbon')))
-        wait.until(
-            expected_conditions.presence_of_element_located(
-                (By.CSS_SELECTOR, '.currency')))
-        ribbons = driver.find_elements(By.CSS_SELECTOR, 'a.ribbon')
-        elem_with_account_id = ribbons[0]
-        params = json.loads(
-            elem_with_account_id.get_attribute('fin-ui-sref-params'))
-    finally:
-        driver.switch_to.parent_frame()
-    return params['accountId']
-
-
-def download_url_request_json_payload(account_id: str,
-                                      from_date: datetime.date,
-                                      to_date: datetime.date) -> dict:
-    return {
-        "ids": [account_id],
-        "from": format_date(from_date),
-        "to": format_date(to_date),
-        "format": "CSV"
-    }
-
-
-def prepare_headers(cookies: dict, user_agent: str) -> dict:
-    return {
-        'X-CSRF-TOKEN': cookies['CSRF-TOKEN'],
-        'Host': 'www.bcge.ch',
-        'Origin': 'https://www.bcge.ch',
-        'Referer': 'https://www.bcge.ch/next/?type=iframe',
-        'User-Agent': user_agent
-    }
-
-
-def fetch_download_url(driver: webdriver.remote.webdriver.WebDriver,
-                       account_id: str) -> str:
-    fetch_page = ('https://www.bcge.ch/' +
-                  'next/api/accounts/{0}/bookings/export'.format(account_id))
-    json_payload = download_url_request_json_payload(
-        account_id,
-        from_date=datetime.date(2018, 1, 1),
-        to_date=datetime.date.today())
-    cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
-    headers = prepare_headers(cookies, get_user_agent(driver))
-    response = requests.post(fetch_page,
-                             headers=headers,
-                             cookies=cookies,
-                             json=json_payload)
-    if not response.ok:
-        raise Exception("The URL fetch request has failed. " +
-                        ('Response reason: {0}, parameters: {1}'
-                         ).format(response.reason, (fetch_page, headers,
-                                                    cookies, json_payload)))
-    return json.loads(response.content)['data']['downloadUrl']
-
-
-def fetch_account_statement_csv(driver: webdriver.remote.webdriver.WebDriver,
-                                download_url: str) -> bytes:
-    fetch_page = 'https://www.bcge.ch/next/' + download_url
-    cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
-    headers = prepare_headers(cookies, get_user_agent(driver))
-    response = requests.get(fetch_page, headers=headers, cookies=cookies)
-    if not response.ok:
-        raise Exception("The statement fetch request has failed. " +
-                        ('Response reason: {0}, parameters: {1}'
-                         ).format(response.reason, (fetch_page, cookies)))
-    return response.content
-
-
-def wait_for_logged_in_state(
-        driver: webdriver.remote.webdriver.WebDriver) -> None:
-    MAIN_PAGE = 'https://www.bcge.ch/portal/netbanking'
-    wait = WebDriverWait(driver, 60)
-    wait.until(expected_conditions.url_matches(MAIN_PAGE))
-
-
-def fetch_all_transactions_since_2018(
-        driver: webdriver.remote.webdriver.WebDriver) -> bytes:
-    account_id = get_account_id(driver)
-    download_url = fetch_download_url(driver, account_id)
-    account_statement_raw = fetch_account_statement_csv(driver, download_url)
-    return account_statement_raw.decode('latin-1').encode('utf-8')
-
-
-def fetch_bcge_data(driver: webdriver.remote.webdriver.WebDriver,
-                    creds: Credentials) -> bytes:
-    """Fetches BCGE's transaction data using Selenium
-
-    Returns:
-        A CSV UTF-8 encoded string with the fetched transactions.
+    :param page playwright.async_api.Page: A blank page.
+    :param creds Credentials
+    :rtype None
     """
-    logging.info("Logging in.")
-    login(creds, driver)
-    logging.info("Waiting for login.")
-    wait_for_logged_in_state(driver)
-    logging.info("Fetching transaction data.")
-    return fetch_all_transactions_since_2018(driver)
+    await page.goto(LOGIN_PAGE)
+    await page.get_by_label("Vertragsnummer").click()
+    await page.get_by_label("Vertragsnummer").fill(creds.id)
+    await page.get_by_label("Vertragsnummer").press("Tab")
+    await page.get_by_label("Passwort").fill(creds.pwd)
+    await page.get_by_role("button", name="Login").click()
+    await page.wait_for_url('https://connect.bcge.ch/#/')
+
+
+async def trigger_statement_export(page: playwright.async_api.Page) -> None:
+    iframe = page.frame_locator("iframe")
+    await iframe.get_by_role("button", name="Alle Bewegungen").click()
+    await iframe.get_by_role("button", name="Herunterladen").click()
+    await iframe.get_by_text("Mit Strichpunkt getrennt (CSV)").click()
+    await iframe.get_by_text("Saldo zu jeder Buchung").click()
+    await iframe.get_by_text('Von').click()
+    await page.keyboard.type("01.04.2023")
+    await iframe.get_by_role("button", name="Jetzt herunterladen").click()
+
+
+async def fetch_account_statement(page: playwright.async_api.Page,
+                                  creds: Credentials) -> bytes:
+    """
+    Fetches BCGE's account statement.
+
+    :param page playwright.async_api.Page: A blank page.
+    :param creds Credentials
+    :rtype bytes: A CSV UTF-8 encoded string with the fetched
+        statement.
+    """
+    logging.info("Logging in to BCGE.")
+    await login(page, creds)
+    logging.info("Logged in to BCGE.")
+    logging.info("Triggerring statement export.")
+    async with page.expect_download() as download_info:
+        await trigger_statement_export(page)
+    download = await download_info.value
+    download_path = await download.path()
+    logging.info("Finished downloading the account statement.")
+    if not download_path:
+        raise Exception("The BCGE statement download has failed." +
+                        " The download path is empty.")
+    with open(download_path, "rb") as f:
+        return f.read().decode('latin-1').encode('utf-8')

@@ -95,12 +95,21 @@ def read_config_from_context(ctx):
 @cli.command()
 @click.pass_context
 def pull_bcge(ctx) -> None:
-    """Fetches BCGE data into a CSV file."""
+    """Fetches BCGE data and outputs a CSV file."""
     config = read_config_from_context(ctx)
     download_directory = PurePath(config['download_directory'])
-    with getFirefoxDriver() as driver:
-        sys.stdout.buffer.write(
-            bcge.fetch_bcge_data(driver, extract_bcge_credentials(config)))
+
+    async def run():
+        async with async_playwright() as pw:
+            browser = await pw.firefox.launch(
+                headless=False, downloads_path=download_directory)
+            statement = await bcge.fetch_account_statement(
+                await browser.new_page(), extract_bcge_credentials(config))
+            await browser.close()
+
+        sys.stdout.buffer.write(statement)
+
+    asyncio.run(run())
 
 
 @cli.command()
