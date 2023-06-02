@@ -148,7 +148,7 @@ def pull_coop_supercard(ctx) -> None:
 @click.argument('wire_instructions_csv', type=click.File('r'))
 def cs_send_wire_to_ib(ctx, amount: str,
                        wire_instructions_csv: typing.TextIO) -> None:
-    """Sends a wire transfor to Interactive Brokers.
+    """Sends a wire transfer to Interactive Brokers.
 
     Example use:
 
