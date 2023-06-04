@@ -61,9 +61,7 @@ async def download_transaction_history(page: playwright.async_api.Page,
 
     :param page playwright.async_api.Page: A blank page.
     :param creds Credentials
-    :param download_dir pathlib.Path:
-        The download directory used by the browser.
-    :rtype None
+    :rtype bytes The downloaded statement.
     """
     await login(page, creds)
     async with intercept_download(page) as download:
