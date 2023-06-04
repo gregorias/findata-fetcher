@@ -1,7 +1,7 @@
 """Charles Schwab browser automation tools."""
 import asyncio
 import pathlib
-from typing import NamedTuple
+from typing import Callable, NamedTuple, Awaitable
 
 import playwright
 import playwright.async_api
@@ -14,9 +14,22 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-async def trigger_transaction_history_export(page: playwright.async_api.Page):
+async def do_nothing(p: playwright.async_api.Page):
+    return
+
+
+async def select_eac_account_on_transaction_history_page(p):
+    await p.get_by_role("combobox").filter(has_text='grzegorzmilka').click()
+    await p.get_by_role("link", name="Equity Award Center").click()
+
+
+async def trigger_transaction_history_export(
+    page: playwright.async_api.Page,
+    select_account: Callable[[playwright.async_api.Page], Awaitable[None]]
+) -> None:
     await page.goto(
         'https://client.schwab.com/app/accounts/transactionhistory/#/')
+    await select_account(page)
     async with page.expect_popup() as popup_info:
         await page.locator("#bttnExport button").click()
     popup = await popup_info.value
@@ -54,10 +67,10 @@ async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     await page.wait_for_url('https://client.schwab.com/clientapps/**')
 
 
-async def download_transaction_history(page: playwright.async_api.Page,
-                                       creds: Credentials) -> bytes:
+async def download_brokerage_account_transaction_history(
+        page: playwright.async_api.Page, creds: Credentials) -> bytes:
     """
-    Downloads Charles Schwab's transaction history.
+    Downloads Charles Schwab brokerage account's transaction history.
 
     :param page playwright.async_api.Page: A blank page.
     :param creds Credentials
@@ -65,7 +78,23 @@ async def download_transaction_history(page: playwright.async_api.Page,
     """
     await login(page, creds)
     async with intercept_download(page) as download:
-        await trigger_transaction_history_export(page)
+        await trigger_transaction_history_export(page, do_nothing)
+    return download.downloaded_content()
+
+
+async def download_eac_transaction_history(page: playwright.async_api.Page,
+                                           creds: Credentials) -> bytes:
+    """
+    Downloads Charles Schwab's EAC's transaction history.
+
+    :param page playwright.async_api.Page: A blank page.
+    :param creds Credentials
+    :rtype bytes The downloaded statement.
+    """
+    await login(page, creds)
+    async with intercept_download(page) as download:
+        await trigger_transaction_history_export(
+            page, select_eac_account_on_transaction_history_page)
     return download.downloaded_content()
 
 

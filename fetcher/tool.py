@@ -190,14 +190,37 @@ def cs_send_wire_to_ib(ctx, amount: str,
 def pull_cs_account_history(ctx) -> None:
     """Fetches Charles Schwab's transaction history.
 
-    Print the CSV file to STDOUT.
+    Prints the CSV file to STDOUT.
     """
     config = read_config_from_context(ctx)
 
     async def run():
         async with async_playwright() as pw:
+            # Doesn't work with Chrome. Can't login.
             browser = await pw.firefox.launch(headless=False)
-            statement = await cs.download_transaction_history(
+            statement = await cs.download_brokerage_account_transaction_history(
+                await browser.new_page(), extract_cs_credentials(config))
+            await browser.close()
+
+        sys.stdout.buffer.write(statement)
+
+    asyncio.run(run())
+
+
+@cli.command()
+@click.pass_context
+def pull_cs_eac_history(ctx) -> None:
+    """Fetches Charles Schwab EAC's transaction history.
+
+    Prints the CSV file to STDOUT.
+    """
+    config = read_config_from_context(ctx)
+
+    async def run():
+        async with async_playwright() as pw:
+            # Doesn't work with Chrome. Can't login.
+            browser = await pw.firefox.launch(headless=False)
+            statement = await cs.download_eac_transaction_history(
                 await browser.new_page(), extract_cs_credentials(config))
             await browser.close()
 
