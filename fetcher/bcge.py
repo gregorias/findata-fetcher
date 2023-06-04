@@ -6,6 +6,8 @@ from typing import NamedTuple
 import playwright
 import playwright.async_api
 
+from .playwrightutils import intercept_download
+
 LOGIN_PAGE = 'https://www.bcge.ch/authen/login?lang=de'
 
 
@@ -58,13 +60,7 @@ async def fetch_account_statement(page: playwright.async_api.Page,
     await login(page, creds)
     logging.info("Logged in to BCGE.")
     logging.info("Triggerring statement export.")
-    async with page.expect_download() as download_info:
+    async with intercept_download(page) as download:
         await trigger_statement_export(page)
-    download = await download_info.value
-    download_path = await download.path()
     logging.info("Finished downloading the account statement.")
-    if not download_path:
-        raise Exception("The BCGE statement download has failed." +
-                        " The download path is empty.")
-    with open(download_path, "rb") as f:
-        return f.read().decode('latin-1').encode('utf-8')
+    return download.downloaded_content().decode('latin-1').encode('utf-8')

@@ -7,6 +7,7 @@ import pathlib
 import playwright.async_api
 import shutil
 import time
+import typing
 from typing import TypedDict
 
 
@@ -36,6 +37,7 @@ async def preserve_new_file(dir: pathlib.Path):
     :param dir pathlib.Path: The downloads directory used by Playwright.
     """
     old_dirs = set(os.listdir(dir))
+
     async def wait_for_new_file():
         while True:
             new_dirs = set(os.listdir(dir))
@@ -49,6 +51,37 @@ async def preserve_new_file(dir: pathlib.Path):
             else:
                 await asyncio.sleep(1)
                 continue
+
     wait_for_new_file_task = asyncio.create_task(wait_for_new_file())
     yield wait_for_new_file_task
     await wait_for_new_file_task
+
+
+class Download:
+
+    def __init__(self, download_info):
+        self.download_info = download_info
+
+    async def wait_for_download(self):
+        download = await self.download_info.value
+        download_path = await download.path()
+        if not download_path:
+            raise Exception("The download interception has failed.")
+        with open(download_path, "rb") as f:
+            self.value = f.read()
+
+    def downloaded_content(self) -> bytes:
+        """Returns the bytes of the downloaded file."""
+        return self.value
+
+
+@contextlib.asynccontextmanager
+async def intercept_download(
+        page: playwright.async_api.Page) -> typing.AsyncIterator[Download]:
+    """An async context manager that waits for a download to finish.
+
+    Returns the object representing the downloaded content."""
+    async with page.expect_download() as download_info:
+        download = Download(download_info)
+        yield download
+    await download.wait_for_download()
