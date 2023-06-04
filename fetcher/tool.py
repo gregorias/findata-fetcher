@@ -186,29 +186,22 @@ def cs_send_wire_to_ib(ctx, amount: str,
 
 
 @cli.command()
-@click.option(
-    '--download-directory',
-    required=True,
-    help='The target download directory.',
-    type=click.Path(exists=True, file_okay=False, writable=True),
-)
 @click.pass_context
-def pull_cs_account_history(ctx, download_directory) -> None:
-    """Downloads Charles Schwab transaction history into a CSV file.
+def pull_cs_account_history(ctx) -> None:
+    """Fetches Charles Schwab's transaction history.
 
-    This command places the downloaded file in a preconfigured directory.
+    Print the CSV file to STDOUT.
     """
     config = read_config_from_context(ctx)
-    download_directory = Path(download_directory)
 
     async def run():
         async with async_playwright() as pw:
-            browser = await pw.firefox.launch(
-                headless=False, downloads_path=download_directory)
-            await cs.download_transaction_history(
-                await browser.new_page(), extract_cs_credentials(config),
-                download_directory)
+            browser = await pw.firefox.launch(headless=False)
+            statement = await cs.download_transaction_history(
+                await browser.new_page(), extract_cs_credentials(config))
             await browser.close()
+
+        sys.stdout.buffer.write(statement)
 
     asyncio.run(run())
 

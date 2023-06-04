@@ -6,7 +6,7 @@ from typing import NamedTuple
 import playwright
 import playwright.async_api
 
-from fetcher.playwrightutils import preserve_new_file
+from fetcher.playwrightutils import intercept_download
 
 
 class Credentials(NamedTuple):
@@ -55,8 +55,7 @@ async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
 
 
 async def download_transaction_history(page: playwright.async_api.Page,
-                                       creds: Credentials,
-                                       download_dir: pathlib.Path) -> None:
+                                       creds: Credentials) -> bytes:
     """
     Downloads Charles Schwab's transaction history.
 
@@ -67,8 +66,9 @@ async def download_transaction_history(page: playwright.async_api.Page,
     :rtype None
     """
     await login(page, creds)
-    async with preserve_new_file(download_dir):
+    async with intercept_download(page) as download:
         await trigger_transaction_history_export(page)
+    return download.downloaded_content()
 
 
 class ForFurtherCreditInstructions(NamedTuple):
