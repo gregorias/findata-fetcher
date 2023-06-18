@@ -81,6 +81,8 @@ def fetch_account(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     csvLink = reportExportForm.find_element(
         By.XPATH, "//a[normalize-space(text()) = 'CSV']")
     csvFetchUrl = csvLink.get_attribute('href')
+    if not csvFetchUrl:
+        raise Exception("The CSV export link was not found.")
     cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
     return fetch_csv(csvFetchUrl, cookies)
 
@@ -99,6 +101,8 @@ def fetch_portfolio(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     csvLink = reportExportForm.find_element(
         By.XPATH, "//a[normalize-space(text()) = 'CSV']")
     csvFetchUrl = csvLink.get_attribute('href')
+    if not csvFetchUrl:
+        raise Exception("The CSV export link was not found.")
     cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
     return fetch_csv(csvFetchUrl, cookies)
 

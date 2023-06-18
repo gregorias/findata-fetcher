@@ -52,7 +52,10 @@ def fetch_latest_bill(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
     driver.implicitly_wait(30)
     latest_bill_a_elem = driver.find_element(
         By.CSS_SELECTOR, '#statement-list-statement-date0 a')
-    latest_bill_id = extract_bid(latest_bill_a_elem.get_attribute('id'))
+    latest_bill_a_elem_id = latest_bill_a_elem.get_attribute('id')
+    if not latest_bill_a_elem_id:
+        raise Exception("Could not find the latest bill element's ID.")
+    latest_bill_id = extract_bid(latest_bill_a_elem_id)
     return fetch_bill(latest_bill_id, driver.get_cookies())
 
 
