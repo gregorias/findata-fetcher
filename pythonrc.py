@@ -60,6 +60,7 @@ def start_driver_wire():
 class Browser(Enum):
     FIREFOX = 1
     CHROMIUM = 2
+    WEBKIT = 3
 
 
 loop = asyncio.new_event_loop()
@@ -80,7 +81,12 @@ async def start_playwright(
                  playwright.async_api.Page]
     """
     pw = await async_playwright().start()
-    browser_type = pw.firefox if browser_spec == Browser.FIREFOX else pw.chromium
+    if browser_spec == Browser.FIREFOX:
+        browser_type = pw.firefox
+    elif browser_spec == Browser.CHROMIUM:
+        browser_type = pw.chromium
+    elif browser_spec == Browser.WEBKIT:
+        browser_type = pw.webkit
     browser = await browser_type.launch(
         headless=False, downloads_path="/Users/grzesiek/Downloads")
     p = await browser.new_page()
