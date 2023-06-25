@@ -25,6 +25,7 @@ from fetcher import finpension
 from fetcher import galaxus
 from fetcher import gmail
 from fetcher import ib
+from fetcher import ibplaywright
 from fetcher import revolut
 from fetcher import revolut_mail
 from fetcher import splitwise
@@ -73,7 +74,7 @@ def ruc(a):
 async def start_playwright(
     browser_spec: Browser = Browser.FIREFOX
 ) -> tuple[playwright.async_api.Playwright, playwright.async_api.Browser,
-           playwright.async_api.Page]:
+           playwright.async_api.BrowserContext, playwright.async_api.Page]:
     """Starts a synchronous Playwright instance.
 
     :rtype tuple[playwright.async_api.Playwright,
@@ -89,5 +90,8 @@ async def start_playwright(
         browser_type = pw.webkit
     browser = await browser_type.launch(
         headless=False, downloads_path="/Users/grzesiek/Downloads")
-    p = await browser.new_page()
-    return (pw, browser, p)
+    # no_viewport=True disables the default fixed viewport and lets the site
+    # adapt to the actual window size
+    context = await browser.new_context(no_viewport=True)
+    p = await context.new_page()
+    return (pw, browser, context, p)
