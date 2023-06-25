@@ -10,7 +10,7 @@ from playwright.async_api import async_playwright
 import shutil
 import time
 import typing
-from typing import TypedDict
+from typing import AsyncIterator, TypedDict
 
 from .contextextra import async_closing
 
@@ -51,32 +51,63 @@ def playwright_cookie_jar_to_requests_cookies(
 @contextlib.asynccontextmanager
 async def preserve_new_file(dir: pathlib.Path):
     """
-    A context manager that preserves a file downloaded in a Playwright session.
+    A context manager that preserves files downloaded in a Playwright session.
 
     Playwright may asynchronously download a file. This context manager watches
     for this event and copies the file once it happens.
 
     :param dir pathlib.Path: The downloads directory used by Playwright.
     """
-    old_dirs = set(os.listdir(dir))
+    async with get_new_files(dir) as get_new_files_task:
 
-    async def wait_for_new_file():
+        async def copy_new_files():
+            new_files = await get_new_files_task
+            for nf in new_files:
+                # We need to copy the file, because playwright deletes
+                # downloaded files on browser close.
+                shutil.copy(nf, str(nf) + ".csv")
+
+        copy_new_files_task = asyncio.create_task(copy_new_files())
+        yield copy_new_files_task
+        await copy_new_files_task
+
+
+# Using an async context manager, because it's more natural:
+# * The client can now define the timeout using an orthogonal asyncio.timeout
+# * The client can combine it with other concurrent operations without
+#   blocking.
+@contextlib.asynccontextmanager
+async def get_new_files(dir: pathlib.Path):
+    """
+    A context manager that returns files downloaded in a Playwright session.
+
+    Playwright may asynchronously download a file. This context
+    manager watches for new files and returns their paths.
+
+    Example:
+
+    async with get_new_files(dir) as get_new_files_task:
+        await trigger_download()
+        new_files = await get_new_files_task
+        copy(new_files, dest)
+
+    :param dir pathlib.Path: The downloads directory used by Playwright.
+    """
+    old_entries = set(os.listdir(dir))
+
+    async def wait_for_new_files():
         while True:
-            new_dirs = set(os.listdir(dir))
-            if len(new_dirs) > len(old_dirs):
-                new_files = new_dirs.difference(old_dirs)
-                for nf in new_files:
-                    # We need to copy the file, because playwright deletes
-                    # downloaded files on browser close.
-                    shutil.copy(dir / nf, dir / (nf + ".csv"))
-                break
+            new_entries = set(os.listdir(dir))
+            if len(new_entries) > len(old_entries):
+                new_files = new_entries.difference(old_entries)
+                return [pathlib.Path(dir / nf) for nf in new_files]
             else:
                 await asyncio.sleep(1)
                 continue
 
-    wait_for_new_file_task = asyncio.create_task(wait_for_new_file())
-    yield wait_for_new_file_task
-    await wait_for_new_file_task
+    wait_for_new_files_task = asyncio.create_task(wait_for_new_files())
+    yield wait_for_new_files_task
+    await wait_for_new_files_task
 
 
 class Download:
