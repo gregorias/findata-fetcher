@@ -25,11 +25,14 @@ from selenium import webdriver  # type: ignore
 from selenium.webdriver.firefox.service import Service as FirefoxService  # type: ignore
 from seleniumwire import webdriver as webdriverwire  # type: ignore
 from playwright.async_api import async_playwright
+
+pw = async_playwright
 import click
 
 from . import bcge
 from . import bcgecc
 from . import coop_supercard
+from .contextextra import async_closing
 from . import cs
 from . import degiro
 from . import easyride
@@ -38,6 +41,7 @@ from . import galaxus
 from . import gmail
 from . import google_play_mail
 from . import ib
+from . import ibplaywright
 from . import mbank
 from . import patreon
 from . import revolut
@@ -303,6 +307,31 @@ def decode_ib_wire_instructions(csvf: typing.TextIO) -> dict[str, str]:
     for row in csv.DictReader(csvf):
         result[row['key']] = row['value']
     return result
+
+
+@cli.command()
+@click.pass_context
+def ib_cancel_pending_deposits(ctx) -> None:
+    """Cancels all pending deposits.
+
+    Outputs a CSV with wire instructions.
+
+    Example use:
+
+        ib-cancel-pending-deposits
+    """
+    config = read_config_from_context(ctx)
+
+    async def run():
+        async with (async_playwright() as
+                    pw, async_closing(pw.firefox.launch(headless=False)) as
+                    browser,
+                    async_closing(browser.new_context(no_viewport=True)) as
+                    context, async_closing(context.new_page()) as page):
+            await ibplaywright.login(page, extract_ib_credentials(config))
+            await ibplaywright.cancel_pending_deposits(page)
+
+    asyncio.run(run())
 
 
 @cli.command()

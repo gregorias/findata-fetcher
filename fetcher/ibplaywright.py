@@ -5,12 +5,13 @@ It's similar to fetcher.ib but uses Playwright instead of Selenium.
 """
 from decimal import Decimal
 from enum import Enum
+import re
 from typing import NamedTuple
 import playwright.async_api
 
 from .ib import Credentials
 
-D = Decimal
+IB_DOMAIN = 'https://www.interactivebrokers.co.uk'
 
 
 async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
@@ -23,7 +24,7 @@ async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     :param creds Credentials
     :rtype None
     """
-    await page.goto("https://www.interactivebrokers.co.uk/sso/Login")
+    await page.goto(f"{IB_DOMAIN}/sso/Login")
     await page.get_by_placeholder("Username").click()
     await page.get_by_placeholder("Username").fill(creds.id)
     await page.get_by_placeholder("Password").click()
@@ -60,8 +61,7 @@ async def deposit(page: playwright.async_api.Page, source: DepositSource,
     :rtype None
     """
     assert amount > 0, f"Must deposit a positive amount, got f{amount}."
-    await page.goto('https://www.interactivebrokers.co.uk' +
-                    '/AccountManagement/AmAuthentication' +
+    await page.goto(IB_DOMAIN + '/AccountManagement/AmAuthentication' +
                     '?action=FUND_TRANSFERS&type=DEPOSIT')
     await page.get_by_role("heading", name=source.value).click()
     await page.get_by_placeholder("Required").click()
@@ -108,3 +108,27 @@ async def deposit(page: playwright.async_api.Page, source: DepositSource,
         beneficiary_bank=deposit_information_dict["Beneficiary Bank"],
         for_further_credit=deposit_information_dict[
             "Payment Reference/For Further Credit to"])
+
+
+async def cancel_pending_deposits(page: playwright.async_api.Page) -> None:
+    """
+    Cancels all pending deposits.
+
+    :param page playwright.async_api.Page: A page in a logged in state.
+    :return: None
+    """
+    await page.goto(IB_DOMAIN + '/AccountManagement/AmAuthentication' +
+                    '?action=TransactionHistory')
+    # Wait for the list of transfers to load.
+    await page.get_by_role(
+        "row", name=re.compile(".*Deposit.*Bank Transfer.*")).first.focus()
+    pending_deposits = await page.get_by_role(
+        "row", name=re.compile(".*Deposit.*Pending.*")).all()
+    for pending_deposit in pending_deposits:
+        await pending_deposit.click()
+        await page.get_by_role("link", name="Cancel Request").click()
+        await page.get_by_role("link", name="Yes").click()
+        # Wait for the cancellation to finish.
+        await page.get_by_role(
+            "heading", name='Your Deposit request has been cancelled').focus()
+        await page.get_by_role("button", name="Close").click()

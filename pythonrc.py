@@ -3,6 +3,7 @@
 # in my (b)python setup and provides convenient bindings.
 import asyncio
 from bs4 import BeautifulSoup  # type: ignore
+import decimal
 from enum import Enum
 from selenium import webdriver
 from selenium.webdriver.common.by import By  # type: ignore
@@ -30,6 +31,8 @@ from fetcher import revolut
 from fetcher import revolut_mail
 from fetcher import splitwise
 from fetcher import ubereats
+
+D = decimal.Decimal
 
 with open('config.json', 'r') as cf:
     config = json.load(cf)
