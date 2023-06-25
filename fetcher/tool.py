@@ -44,6 +44,8 @@ from . import ib
 from . import ibplaywright
 from . import mbank
 from . import patreon
+from . import playwrightutils
+from .playwrightutils import Browser
 from . import revolut
 from . import revolut_mail
 from . import splitwise
@@ -323,11 +325,8 @@ def ib_cancel_pending_deposits(ctx) -> None:
     config = read_config_from_context(ctx)
 
     async def run():
-        async with (async_playwright() as
-                    pw, async_closing(pw.firefox.launch(headless=False)) as
-                    browser,
-                    async_closing(browser.new_context(no_viewport=True)) as
-                    context, async_closing(context.new_page()) as page):
+        async with playwrightutils.new_page(Browser.FIREFOX,
+                                            headless=False) as page:
             await ibplaywright.login(page, extract_ib_credentials(config))
             await ibplaywright.cancel_pending_deposits(page)
 

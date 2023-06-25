@@ -27,6 +27,7 @@ from fetcher import galaxus
 from fetcher import gmail
 from fetcher import ib
 from fetcher import ibplaywright
+from fetcher.playwrightutils import Browser, get_browser_type
 from fetcher import revolut
 from fetcher import revolut_mail
 from fetcher import splitwise
@@ -61,12 +62,6 @@ def start_driver_wire():
     return driver
 
 
-class Browser(Enum):
-    FIREFOX = 1
-    CHROMIUM = 2
-    WEBKIT = 3
-
-
 loop = asyncio.new_event_loop()
 
 
@@ -85,12 +80,7 @@ async def start_playwright(
                  playwright.async_api.Page]
     """
     pw = await async_playwright().start()
-    if browser_spec == Browser.FIREFOX:
-        browser_type = pw.firefox
-    elif browser_spec == Browser.CHROMIUM:
-        browser_type = pw.chromium
-    elif browser_spec == Browser.WEBKIT:
-        browser_type = pw.webkit
+    browser_type = get_browser_type(pw, browser_spec)
     browser = await browser_type.launch(
         headless=False, downloads_path="/Users/grzesiek/Downloads")
     # no_viewport=True disables the default fixed viewport and lets the site

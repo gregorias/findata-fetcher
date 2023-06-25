@@ -2,13 +2,35 @@
 
 import asyncio
 import contextlib
+from enum import Enum
 import os
 import pathlib
 import playwright.async_api
+from playwright.async_api import async_playwright
 import shutil
 import time
 import typing
 from typing import TypedDict
+
+from .contextextra import async_closing
+
+
+class Browser(Enum):
+    FIREFOX = 1
+    CHROMIUM = 2
+    WEBKIT = 3
+
+
+def get_browser_type(
+        pw: playwright.async_api.Playwright,
+        browser_type: Browser) -> playwright.async_api.BrowserType:
+    if browser_type == Browser.FIREFOX:
+        return pw.firefox
+    elif browser_type == Browser.CHROMIUM:
+        return pw.chromium
+    elif browser_type == Browser.WEBKIT:
+        return pw.webkit
+    raise Exception(f"Unknown browser type: {browser_type}")
 
 
 def playwright_cookie_jar_to_requests_cookies(
@@ -85,3 +107,24 @@ async def intercept_download(
         download = Download(download_info)
         yield download
     await download.wait_for_download()
+
+
+@contextlib.asynccontextmanager
+async def new_page(
+        browser_type: Browser,
+        headless: bool = False
+) -> typing.AsyncIterator[playwright.async_api.Page]:
+    """Opens a new page in a new context.
+
+    :param browser playwright.async_api.BrowserType: The browser to use.
+    :param headless bool: Whether to run a fixed-viewport headless browser or a
+    responsive one. Defaults to False.
+    """
+    async with (async_playwright() as pw,
+                async_closing(
+                    get_browser_type(pw,
+                                     browser_type).launch(headless=headless))
+                as browser,
+                async_closing(browser.new_context(no_viewport=not headless)) as
+                context, async_closing(context.new_page()) as page):
+        yield page
