@@ -11,6 +11,7 @@ from seleniumwire import webdriver as webdriverwire  # type: ignore
 from playwright.async_api import async_playwright
 import email
 import json
+import pathlib
 import requests
 import playwright
 
@@ -79,10 +80,12 @@ async def start_playwright(
                  playwright.async_api.Browser,
                  playwright.async_api.Page]
     """
+    downloads_dir = pathlib.Path.home().joinpath('Downloads')
+
     pw = await async_playwright().start()
     browser_type = get_browser_type(pw, browser_spec)
-    browser = await browser_type.launch(
-        headless=False, downloads_path="/Users/grzesiek/Downloads")
+    browser = await browser_type.launch(headless=False,
+                                        downloads_path=downloads_dir)
     # no_viewport=True disables the default fixed viewport and lets the site
     # adapt to the actual window size
     context = await browser.new_context(no_viewport=True)

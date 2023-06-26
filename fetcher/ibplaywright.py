@@ -3,13 +3,16 @@
 
 It's similar to fetcher.ib but uses Playwright instead of Selenium.
 """
+import datetime
 from decimal import Decimal
 from enum import Enum
+import pathlib
 import re
 from typing import NamedTuple
 import playwright.async_api
 
-from .ib import Credentials
+from .ib import Credentials, quarter_ago
+from .playwrightutils import get_new_files
 
 IB_DOMAIN = 'https://www.interactivebrokers.co.uk'
 
@@ -132,3 +135,38 @@ async def cancel_pending_deposits(page: playwright.async_api.Page) -> None:
         await page.get_by_role(
             "heading", name='Your Deposit request has been cancelled').focus()
         await page.get_by_role("button", name="Close").click()
+
+
+async def fetch_account_statement(page: playwright.async_api.Page,
+                                  download_dir: pathlib.Path) -> bytes:
+    """Fetches Interactive Brokers's account statement.
+
+    :param page playwright.async_api.Page: A page in a logged in state.
+    :return bytes: The statement CSV file.
+    """
+    await page.goto(IB_DOMAIN + '/AccountManagement/AmAuthentication' +
+                    '?action=Statements')
+    # Click the right arrow that goes to the dialog for the account statement.
+    await (page.get_by_role("paragraph").filter(has_text="MTM Summary")
+           # An XPath that selects the first parent that a class "row"
+           .locator("//ancestor::div[contains(@class, 'row')]").last.locator(
+               "a.btn-icon .fa-circle-arrow-right").click())
+    await page.locator("div.row", has_text="Period").last.get_by_role(
+        'combobox').select_option("string:DATE_RANGE")
+
+    today = datetime.date.today()
+    quarter_ago_str = quarter_ago(today).strftime("%Y-%m-%d")
+    for _ in range(2):
+        # For some reason, doing it only once doesn't work.
+        await page.locator("input[name=\"fromDate\"]").fill(quarter_ago_str)
+        await page.keyboard.press("Enter")
+
+    async with get_new_files(download_dir) as files_downloaded_event:
+        await (page.locator(".row", has_text='CSV').last.locator(
+            "a", has_text="Download").first.click())
+        await files_downloaded_event
+
+    for statement_filename in await files_downloaded_event:
+        with open(statement_filename, 'rb') as f:
+            return f.read()
+    raise Exception("Expected to download a statement but didn't.")

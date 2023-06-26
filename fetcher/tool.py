@@ -335,6 +335,28 @@ def ib_cancel_pending_deposits(ctx) -> None:
 
 @cli.command()
 @click.pass_context
+def ib_pull(ctx) -> None:
+    """Pulls an Interactive Brokers' account statement.
+
+    Outputs the statement CSV to stdout.
+    """
+    config = read_config_from_context(ctx)
+    downloads_path = Path('/tmp')
+
+    async def run():
+        async with playwrightutils.new_page(
+                Browser.FIREFOX, headless=False,
+                downloads_path=downloads_path) as page:
+            await ibplaywright.login(page, extract_ib_credentials(config))
+            statement = await ibplaywright.fetch_account_statement(
+                page, Path('/tmp'))
+            sys.stdout.buffer.write(statement)
+
+    asyncio.run(run())
+
+
+@cli.command()
+@click.pass_context
 @click.option('--source',
               required=True,
               type=click.Choice(['CS', 'BCGE'], case_sensitive=False))

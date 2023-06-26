@@ -10,7 +10,7 @@ from playwright.async_api import async_playwright
 import shutil
 import time
 import typing
-from typing import AsyncIterator, TypedDict
+from typing import AsyncIterator, Optional, TypedDict
 
 from .contextextra import async_closing
 
@@ -142,20 +142,22 @@ async def intercept_download(
 
 @contextlib.asynccontextmanager
 async def new_page(
-        browser_type: Browser,
-        headless: bool = False
+    browser_type: Browser,
+    headless: bool = False,
+    downloads_path: Optional[pathlib.Path] = None
 ) -> typing.AsyncIterator[playwright.async_api.Page]:
     """Opens a new page in a new context.
 
     :param browser playwright.async_api.BrowserType: The browser to use.
     :param headless bool: Whether to run a fixed-viewport headless browser or a
+    :param downloads_path Optional[pathlib.Path]: The path used for downloads.
     responsive one. Defaults to False.
     """
     async with (async_playwright() as pw,
                 async_closing(
-                    get_browser_type(pw,
-                                     browser_type).launch(headless=headless))
-                as browser,
+                    get_browser_type(pw, browser_type).launch(
+                        headless=headless, downloads_path=downloads_path)) as
+                browser,
                 async_closing(browser.new_context(no_viewport=not headless)) as
                 context, async_closing(context.new_page()) as page):
         yield page
