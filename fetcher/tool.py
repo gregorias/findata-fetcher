@@ -15,6 +15,7 @@ import functools
 import json
 import logging
 from os import path
+import os
 from pathlib import Path, PurePath
 import tempfile
 import typing
@@ -74,13 +75,18 @@ def open_and_save_on_success(file, mode):
         shutil.move(fn, file)
 
 
+XDG_CONFIG_HOME = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser(
+    '~/.config')
+
+
 @click.group()
 @click.option('--config_file',
-              default='config.json',
+              default=os.path.join(XDG_CONFIG_HOME, 'findata', 'fetcher.json'),
               type=click.File(mode='r'),
-              help='The file containing the program\'s config')
+              help='The file containing the program\'s config ' +
+              '(default: $XDG_CONFIG_HOME/findata/fetcher.json).')
 @click.pass_context
-def cli(ctx, config_file):
+def cli(ctx, config_file: typing.TextIO):
     config = json.load(config_file)
     assert isinstance(config, dict)
 
