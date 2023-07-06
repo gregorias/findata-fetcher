@@ -6,6 +6,7 @@ from typing import NamedTuple
 import playwright
 import playwright.async_api
 
+from . import op
 from .playwrightutils import intercept_download
 
 LOGIN_PAGE = 'https://www.bcge.ch/authen/login?lang=de'
@@ -14,6 +15,16 @@ LOGIN_PAGE = 'https://www.bcge.ch/authen/login?lang=de'
 class Credentials(NamedTuple):
     id: str
     pwd: str
+
+
+def fetch_credentials() -> Credentials:
+    """Fetches the credentials from my 1Password vault.
+
+    This function blocks until the credentials are fetched.
+    """
+    username = op.read('Private', 'bcge.ch', 'username')
+    password = op.read('Private', 'bcge.ch', 'password')
+    return Credentials(id=username, pwd=password)
 
 
 async def login(page: playwright.async_api.Page, creds: Credentials) -> None:

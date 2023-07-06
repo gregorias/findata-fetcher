@@ -109,6 +109,7 @@ def read_config_from_context(ctx):
 def pull_bcge(ctx) -> None:
     """Fetches BCGE data and outputs a CSV file."""
     config = read_config_from_context(ctx)
+    credentials = bcge.fetch_credentials()
     download_directory = PurePath(config['download_directory'])
 
     async def run():
@@ -116,7 +117,7 @@ def pull_bcge(ctx) -> None:
             browser = await pw.firefox.launch(
                 headless=False, downloads_path=download_directory)
             statement = await bcge.fetch_account_statement(
-                await browser.new_page(), extract_bcge_credentials(config))
+                await browser.new_page(), credentials)
             await browser.close()
 
         sys.stdout.buffer.write(statement)
@@ -318,8 +319,7 @@ def decode_ib_wire_instructions(csvf: typing.TextIO) -> dict[str, str]:
 
 
 @cli.command()
-@click.pass_context
-def ib_cancel_pending_deposits(ctx) -> None:
+def ib_cancel_pending_deposits() -> None:
     """Cancels all pending deposits.
 
     Outputs a CSV with wire instructions.
@@ -328,32 +328,31 @@ def ib_cancel_pending_deposits(ctx) -> None:
 
         ib-cancel-pending-deposits
     """
-    config = read_config_from_context(ctx)
+    credentials = ibplaywright.fetch_credentials()
 
     async def run():
         async with playwrightutils.new_page(Browser.FIREFOX,
                                             headless=False) as page:
-            await ibplaywright.login(page, extract_ib_credentials(config))
+            await ibplaywright.login(page, credentials)
             await ibplaywright.cancel_pending_deposits(page)
 
     asyncio.run(run())
 
 
 @cli.command()
-@click.pass_context
-def ib_pull(ctx) -> None:
+def ib_pull() -> None:
     """Pulls an Interactive Brokers' account statement.
 
     Outputs the statement CSV to stdout.
     """
-    config = read_config_from_context(ctx)
+    credentials = ibplaywright.fetch_credentials()
     downloads_path = Path('/tmp')
 
     async def run():
         async with playwrightutils.new_page(
                 Browser.FIREFOX, headless=False,
                 downloads_path=downloads_path) as page:
-            await ibplaywright.login(page, extract_ib_credentials(config))
+            await ibplaywright.login(page, credentials)
             statement = await ibplaywright.fetch_account_statement(
                 page, Path('/tmp'))
             sys.stdout.buffer.write(statement)
@@ -362,12 +361,11 @@ def ib_pull(ctx) -> None:
 
 
 @cli.command()
-@click.pass_context
 @click.option('--source',
               required=True,
               type=click.Choice(['CS', 'BCGE'], case_sensitive=False))
 @click.option('--amount', required=True)
-def ib_set_up_incoming_deposit(ctx, source, amount) -> None:
+def ib_set_up_incoming_deposit(source, amount) -> None:
     """Sets up an incoming deposit on Interactive Brokers.
 
     Outputs a CSV with wire instructions.
@@ -376,11 +374,11 @@ def ib_set_up_incoming_deposit(ctx, source, amount) -> None:
 
         ib-set-up-incoming-deposit --source=cs --amount=21.37
     """
-    config = read_config_from_context(ctx)
+    credentials = ibplaywright.fetch_credentials()
     service = FirefoxService(log_path=path.devnull)
     with getFirefoxDriver() as driver:
         driver.implicitly_wait(20)
-        ib.login(driver, extract_ib_credentials(config))
+        ib.login(driver, credentials)
         ib_source = (ib.DepositSource.BCGE
                      if source == 'BCGE' else ib.DepositSource.CHARLES_SCHWAB)
         instructions = ib.set_up_incoming_deposit(driver, ib_source,
@@ -401,13 +399,13 @@ def ib_set_up_incoming_deposit(ctx, source, amount) -> None:
 def pull_ib(ctx) -> None:
     """Pulls Interactive Brokers CSV file statement."""
     config = read_config_from_context(ctx)
+    credentials = ibplaywright.fetch_credentials()
     download_directory = PurePath(config['download_directory'])
     service = FirefoxService(log_path=path.devnull)
     # We need to use webdriverwire, because we need access to the `requests`
     # API.
     with webdriverwire.Firefox(service=service) as driver:
-        sys.stdout.buffer.write(
-            ib.fetch_data(driver, extract_ib_credentials(config)))
+        sys.stdout.buffer.write(ib.fetch_data(driver, credentials))
 
 
 @cli.command()
@@ -526,10 +524,6 @@ def pull_uber_eats(ctx) -> None:
             f.write(content)
 
 
-def extract_bcge_credentials(config: dict) -> bcge.Credentials:
-    return bcge.Credentials(id=config['bcge_id'], pwd=config['bcge_pwd'])
-
-
 def extract_bcgecc_credentials(config: dict) -> bcgecc.Credentials:
     return bcgecc.Credentials(id=config['bcgecc_id'], pwd=config['bcgecc_pwd'])
 
@@ -545,10 +539,6 @@ def extract_degiro_credentials(config: dict) -> degiro.Credentials:
 def extract_finpension_credentials(config: dict) -> finpension.Credentials:
     return finpension.Credentials(phone_number=config['finpension_id'],
                                   password=config['finpension_pwd'])
-
-
-def extract_ib_credentials(config: dict) -> ib.Credentials:
-    return ib.Credentials(id=config['ib_id'], pwd=config['ib_pwd'])
 
 
 def extract_gmail_credentials(config: dict) -> gmail.Credentials:

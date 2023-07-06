@@ -2,9 +2,6 @@
   "logging_file": "ledupt.log",
   "download_directory": "/home/user/Downloads",
 
-  "bcge_id": "AB123123",
-  "bcge_pwd": "hunter2",
-
   "bcgecc_id": "email@gmail.com",
   "bcgecc_pwd": "hunter2",
 
@@ -16,9 +13,6 @@
 
   "finpension_id": "345678901",
   "finpension_pwd": "hunter2",
-
-  "ib_id": "abc123",
-  "ib_pwd": "hunter2",
 
   "gmail_id": "abc123",
   "gmail_pwd": "hunter2",
@@ -36,5 +30,5 @@
 
   "supercard_id": "email@gmail.com",
   "supercard_pwd": "hunter2",
-  "supercard_last_bc_file": "/home/user/last_barcode_file",
+  "supercard_last_bc_file": "/home/user/last_barcode_file"
 }

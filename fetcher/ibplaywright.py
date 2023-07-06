@@ -11,10 +11,21 @@ import re
 from typing import NamedTuple
 import playwright.async_api
 
+from . import op
 from .ib import Credentials, quarter_ago
 from .playwrightutils import get_new_files
 
 IB_DOMAIN = 'https://www.interactivebrokers.co.uk'
+
+
+def fetch_credentials() -> Credentials:
+    """Fetches the credentials from my 1Password vault.
+
+    This function blocks until the credentials are fetched.
+    """
+    username = op.read('Private', 'Interactive Brokers', 'username')
+    password = op.read('Private', 'Interactive Brokers', 'password')
+    return Credentials(id=username, pwd=password)
 
 
 async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
