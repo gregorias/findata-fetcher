@@ -21,6 +21,14 @@ class Credentials(NamedTuple):
     pwd: str
 
 
+def fetch_credentials() -> Credentials:
+    """Fetches credentials from my 1Password vault."""
+    from . import op
+    username = op.read("Private", "Viseca One", "username")
+    password = op.read("Private", "Viseca One", "password")
+    return Credentials(id=username, pwd=password)
+
+
 LOGIN_PAGE = 'https://one.viseca.ch/login/login'
 
 

@@ -13,6 +13,17 @@ class Credentials(NamedTuple):
     api_key: str
 
 
+def fetch_credentials() -> Credentials:
+    """Fetches credentials from my 1Password vault."""
+    from . import op
+    consumer_key = op.read("Private", "splitwise.com", "consumer key")
+    consumer_secret = op.read("Private", "splitwise.com", "consumer secret")
+    api_key = op.read("Private", "splitwise.com", "api key")
+    return Credentials(consumer_key=consumer_key,
+                       consumer_secret=consumer_secret,
+                       api_key=api_key)
+
+
 class Money(NamedTuple):
     amount: str
     currency_code: str

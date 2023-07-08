@@ -14,6 +14,14 @@ class Credentials(NamedTuple):
     pwd: str
 
 
+def fetch_credentials() -> Credentials:
+    """Fetches credentials from my 1Password vault."""
+    from . import op
+    username = op.read("Private", "Charles Schwab", "username")
+    password = op.read("Private", "Charles Schwab", "password")
+    return Credentials(id=username, pwd=password)
+
+
 async def do_nothing(p: playwright.async_api.Page):
     return
 

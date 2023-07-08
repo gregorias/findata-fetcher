@@ -18,6 +18,17 @@ class Credentials(NamedTuple):
     pin: str
 
 
+def fetch_credentials() -> Credentials:
+    """Fetches credentials from my 1Password vault."""
+    from . import op
+    country_code = op.read("Private", "Revolut", "country_code")
+    phone_number = op.read("Private", "Revolut", "phone_number")
+    pin = op.read("Private", "Revolut", "PIN")
+    return Credentials(country_code=country_code,
+                       phone_number=phone_number,
+                       pin=pin)
+
+
 async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     """
     Logs in to Revolut.

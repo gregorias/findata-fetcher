@@ -16,6 +16,14 @@ class Credentials(NamedTuple):
     pwd: str
 
 
+def fetch_credentials() -> Credentials:
+    """Fetches credentials from my 1Password vault."""
+    from . import op
+    username = op.read("Private", "mbank.pl", "username")
+    password = op.read("Private", "mbank.pl", "password")
+    return Credentials(id=username, pwd=password)
+
+
 MBANK_LOGIN_PAGE = 'https://online.mbank.pl/pl/Login/history'
 HISTORY_PAGE = 'https://online.mbank.pl/history'
 FETCH_PAGE = (

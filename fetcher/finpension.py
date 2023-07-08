@@ -10,6 +10,14 @@ class Credentials(NamedTuple):
     password: str
 
 
+def fetch_credentials() -> Credentials:
+    """Fetches credentials from my 1Password vault."""
+    from . import op
+    username = op.read("Private", "finpension.ch", "username")
+    password = op.read("Private", "finpension.ch", "password")
+    return Credentials(phone_number=username, password=password)
+
+
 async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     """Logs in to Finpension.
 

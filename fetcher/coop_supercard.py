@@ -23,6 +23,14 @@ class Credentials(NamedTuple):
     pwd: str
 
 
+def fetch_credentials() -> Credentials:
+    """Fetches credentials from my 1Password vault."""
+    from . import op
+    username = op.read("Private", "supercard.ch", "username")
+    password = op.read("Private", "supercard.ch", "password")
+    return Credentials(id=username, pwd=password)
+
+
 class Receipt(NamedTuple):
     bc: str
     pdf: bytes

@@ -20,6 +20,14 @@ class Credentials(NamedTuple):
     pwd: str
 
 
+def fetch_credentials() -> Credentials:
+    """Fetches credentials from my 1Password vault."""
+    from . import op
+    username = op.read("Private", "degiro.nl", "username")
+    password = op.read("Private", "degiro.nl", "password")
+    return Credentials(id=username, pwd=password)
+
+
 def login(creds: Credentials,
           driver: webdriver.remote.webdriver.WebDriver) -> None:
     logging.info("Logging in.")

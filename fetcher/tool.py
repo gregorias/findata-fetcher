@@ -126,13 +126,11 @@ def pull_bcge(ctx) -> None:
 
 
 @cli.command()
-@click.pass_context
-def pull_bcgecc(ctx) -> None:
+def pull_bcgecc() -> None:
     """Fetches BCGE CC data and outputs a PDF."""
-    config = read_config_from_context(ctx)
     with getFirefoxDriver() as driver:
         sys.stdout.buffer.write(
-            bcgecc.fetch_data(extract_bcgecc_credentials(config), driver))
+            bcgecc.fetch_data(bcgecc.fetch_credentials(), driver))
 
 
 @cli.command()
@@ -186,12 +184,13 @@ def cs_send_wire_to_ib(ctx, amount: str,
         ),
     )
 
+    creds = cs.fetch_credentials()
+
     async def run():
         async with async_playwright() as pw:
             browser = await pw.firefox.launch(headless=False)
             page = await browser.new_page()
-            await cs.send_wire_to_ib(page, extract_cs_credentials(config),
-                                     wire_instructions_cs)
+            await cs.send_wire_to_ib(page, creds, wire_instructions_cs)
             await page.pause()
             await browser.close()
 
@@ -199,20 +198,19 @@ def cs_send_wire_to_ib(ctx, amount: str,
 
 
 @cli.command()
-@click.pass_context
-def pull_cs_account_history(ctx) -> None:
+def pull_cs_account_history() -> None:
     """Fetches Charles Schwab's transaction history.
 
     Prints the CSV file to STDOUT.
     """
-    config = read_config_from_context(ctx)
+    creds = cs.fetch_credentials()
 
     async def run():
         async with async_playwright() as pw:
             # Doesn't work with Chrome. Can't login.
             browser = await pw.firefox.launch(headless=False)
             statement = await cs.download_brokerage_account_transaction_history(
-                await browser.new_page(), extract_cs_credentials(config))
+                await browser.new_page(), creds)
             await browser.close()
 
         sys.stdout.buffer.write(statement)
@@ -221,20 +219,19 @@ def pull_cs_account_history(ctx) -> None:
 
 
 @cli.command()
-@click.pass_context
-def pull_cs_eac_history(ctx) -> None:
+def pull_cs_eac_history() -> None:
     """Fetches Charles Schwab EAC's transaction history.
 
     Prints the CSV file to STDOUT.
     """
-    config = read_config_from_context(ctx)
+    creds = cs.fetch_credentials()
 
     async def run():
         async with async_playwright() as pw:
             # Doesn't work with Chrome. Can't login.
             browser = await pw.firefox.launch(headless=False)
             statement = await cs.download_eac_transaction_history(
-                await browser.new_page(), extract_cs_credentials(config))
+                await browser.new_page(), creds)
             await browser.close()
 
         sys.stdout.buffer.write(statement)
@@ -247,20 +244,18 @@ def pull_cs_eac_history(ctx) -> None:
 def pull_degiro_account(ctx) -> None:
     """Fetches Degiro's account statement into a CSV file."""
     config = read_config_from_context(ctx)
+    creds = degiro.fetch_credentials()
     download_directory = PurePath(config['download_directory'])
     with getFirefoxDriver() as driver:
-        pull_degiro_account_statement_helper(driver, download_directory,
-                                             config)
+        pull_degiro_account_statement_helper(driver, download_directory, creds)
 
 
 def pull_degiro_account_statement_helper(
         driver: webdriver.remote.webdriver.WebDriver,
-        download_directory: PurePath, config: dict) -> None:
+        download_directory: PurePath, creds: degiro.Credentials) -> None:
     with open_and_save_on_success(download_directory / 'degiro-account.csv',
                                   'wb') as f:
-        f.write(
-            degiro.fetch_account_statement(driver,
-                                           extract_degiro_credentials(config)))
+        f.write(degiro.fetch_account_statement(driver, creds))
 
 
 @cli.command()
@@ -268,10 +263,10 @@ def pull_degiro_account_statement_helper(
 def pull_degiro_portfolio(ctx) -> None:
     """Fetches Degiro's portfolio statement and outputs a CSV file."""
     config = read_config_from_context(ctx)
+    creds = degiro.fetch_credentials()
     with getFirefoxDriver() as driver:
-        sys.stdout.buffer.write(
-            degiro.fetch_portfolio_statement(
-                driver, extract_degiro_credentials(config)))
+        sys.stdout.buffer.write(degiro.fetch_portfolio_statement(
+            driver, creds))
 
 
 @cli.command()
@@ -279,26 +274,25 @@ def pull_degiro_portfolio(ctx) -> None:
 def pull_easyride_receipts(ctx) -> None:
     """Fetches EasyRide receipt PDFs."""
     config = ctx.obj['config']
+    gmail_creds = gmail.fetch_gmail_credentials()
     easyride.fetch_and_archive_receipts(
-        extract_gmail_credentials(config),
+        gmail_creds,
         PurePath(config['download_directory']),
     )
 
 
 @cli.command()
-@click.pass_context
-def pull_finpension(ctx) -> None:
+def pull_finpension() -> None:
     """Prints Finpension's portfolio total.
 
     It will print a line with the value like "12123.12\n"."""
-    config = read_config_from_context(ctx)
+    creds = finpension.fetch_credentials()
 
     async def run():
         async with async_playwright() as pw:
             browser = await pw.firefox.launch(headless=False)
             page = await browser.new_page()
-            await finpension.login(page,
-                                   extract_finpension_credentials(config))
+            await finpension.login(page, creds)
             value = await finpension.fetch_current_total(page)
             print(value)
 
@@ -409,20 +403,18 @@ def pull_ib(ctx) -> None:
 
 
 @cli.command()
-@click.pass_context
-def pull_mbank(ctx) -> None:
+def pull_mbank() -> None:
     """Fetches mBank's data and outputs a CSV file."""
-    config = read_config_from_context(ctx)
+    creds = mbank.fetch_credentials()
     with getFirefoxDriver() as driver:
-        sys.stdout.buffer.write(
-            mbank.fetch_mbank_data(driver, extract_mbank_credentials(config)))
+        sys.stdout.buffer.write(mbank.fetch_mbank_data(driver, creds))
 
 
 def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
-                      download_directory: PurePath, config: dict) -> None:
+                      download_directory: PurePath,
+                      creds: mbank.Credentials) -> None:
     with open_and_save_on_success(download_directory / 'mbank.csv', 'wb') as f:
-        f.write(
-            mbank.fetch_mbank_data(driver, extract_mbank_credentials(config)))
+        f.write(mbank.fetch_mbank_data(driver, creds))
 
 
 @cli.command()
@@ -436,6 +428,7 @@ def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
 def pull_revolut(ctx, download_directory) -> None:
     """Fetches Revolut data into CSV files."""
     config = read_config_from_context(ctx)
+    creds = revolut.fetch_credentials()
     download_directory = Path(download_directory)
 
     async def run():
@@ -444,8 +437,7 @@ def pull_revolut(ctx, download_directory) -> None:
                 browser = await pw.firefox.launch(
                     headless=False, downloads_path=download_directory)
                 await revolut.download_statements(
-                    await browser.new_page(), download_directory,
-                    extract_revolut_credentials(config),
+                    await browser.new_page(), download_directory, creds,
                     config['revolut_account_numbers'])
                 await browser.close()
 
@@ -524,35 +516,8 @@ def pull_uber_eats(ctx) -> None:
             f.write(content)
 
 
-def extract_bcgecc_credentials(config: dict) -> bcgecc.Credentials:
-    return bcgecc.Credentials(id=config['bcgecc_id'], pwd=config['bcgecc_pwd'])
-
-
-def extract_cs_credentials(config: dict) -> cs.Credentials:
-    return cs.Credentials(id=config['cs_id'], pwd=config['cs_pwd'])
-
-
-def extract_degiro_credentials(config: dict) -> degiro.Credentials:
-    return degiro.Credentials(id=config['degiro_id'], pwd=config['degiro_pwd'])
-
-
-def extract_finpension_credentials(config: dict) -> finpension.Credentials:
-    return finpension.Credentials(phone_number=config['finpension_id'],
-                                  password=config['finpension_pwd'])
-
-
 def extract_gmail_credentials(config: dict) -> gmail.Credentials:
     return gmail.Credentials(id=config['gmail_id'], pwd=config['gmail_pwd'])
-
-
-def extract_mbank_credentials(config: dict) -> mbank.Credentials:
-    return mbank.Credentials(id=config['mbank_id'], pwd=config['mbank_pwd'])
-
-
-def extract_revolut_credentials(config: dict) -> revolut.Credentials:
-    return revolut.Credentials(country_code=config['revolut_country_code'],
-                               phone_number=config['revolut_phone_number'],
-                               pin=config['revolut_pin'])
 
 
 def extract_supercard_credentials(config: dict) -> coop_supercard.Credentials:

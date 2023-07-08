@@ -28,6 +28,14 @@ class Credentials(NamedTuple):
     pwd: str
 
 
+def fetch_gmail_credentials() -> Credentials:
+    """Fetches Gmail credentials from my 1Password vault."""
+    from . import op
+    username = op.read("Private", "google.com", "username")
+    app_password = op.read("Private", "google.com", "app_password")
+    return Credentials(id=username, pwd=app_password)
+
+
 class Gmail:
 
     def __init__(self, imap: IMAP4):

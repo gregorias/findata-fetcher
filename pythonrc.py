@@ -38,12 +38,7 @@ D = decimal.Decimal
 
 with open('config.json', 'r') as cf:
     config = json.load(cf)
-    bcgecc_creds = t.extract_bcgecc_credentials(config)
-    cs_creds = t.extract_cs_credentials(config)
-    degiro_creds = t.extract_degiro_credentials(config)
-    finpension_creds = t.extract_finpension_credentials(config)
     gmail_creds = t.extract_gmail_credentials(config)
-    revolut_creds = t.extract_revolut_credentials(config)
     revolut_account_numbers = config['revolut_account_numbers']
     supercard_creds = t.extract_supercard_credentials(config)
     splitwise_creds = t.extract_splitwise_credentials(config)

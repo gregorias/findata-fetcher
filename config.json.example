@@ -2,27 +2,8 @@
   "logging_file": "ledupt.log",
   "download_directory": "/home/user/Downloads",
 
-  "bcgecc_id": "email@gmail.com",
-  "bcgecc_pwd": "hunter2",
-
-  "cs_id": "username",
-  "cs_pwd": "hunter2",
-
-  "degiro_id": "abc123",
-  "degiro_pwd": "hunter2",
-
-  "finpension_id": "345678901",
-  "finpension_pwd": "hunter2",
-
   "gmail_id": "abc123",
   "gmail_pwd": "hunter2",
-
-  "mbank_id": "12345678",
-  "mbank_pwd": "hunter2",
-
-  "revolut_country_code": "+1",
-  "revolut_phone_number": "123456789",
-  "revolut_pin": "1234",
 
   "splitwise_consumer_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "splitwise_consumer_secret": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
