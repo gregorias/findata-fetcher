@@ -16,9 +16,11 @@ class Credentials(NamedTuple):
 def fetch_credentials() -> Credentials:
     """Fetches credentials from my 1Password vault."""
     from . import op
-    consumer_key = op.read("Private", "splitwise.com", "consumer key")
-    consumer_secret = op.read("Private", "splitwise.com", "consumer secret")
-    api_key = op.read("Private", "splitwise.com", "api key")
+    op_vault = "Automated Findata"
+    op_item = "Splitwise"
+    consumer_key = op.read(op_vault, op_item, "consumer key")
+    consumer_secret = op.read(op_vault, op_item, "credential")
+    api_key = op.read(op_vault, op_item, "api key")
     return Credentials(consumer_key=consumer_key,
                        consumer_secret=consumer_secret,
                        api_key=api_key)

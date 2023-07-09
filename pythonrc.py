@@ -38,10 +38,9 @@ D = decimal.Decimal
 
 with open('config.json', 'r') as cf:
     config = json.load(cf)
-    gmail_creds = t.extract_gmail_credentials(config)
     revolut_account_numbers = config['revolut_account_numbers']
-    supercard_creds = t.extract_supercard_credentials(config)
-    splitwise_creds = t.extract_splitwise_credentials(config)
+    op_service_account_token = t.extract_op_service_account_auth_token_from_config_or_fail(
+        config)
 
 
 def start_driver():

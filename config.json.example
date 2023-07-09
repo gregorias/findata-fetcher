@@ -1,15 +1,5 @@
 {
   "logging_file": "ledupt.log",
   "download_directory": "/home/user/Downloads",
-
-  "gmail_id": "abc123",
-  "gmail_pwd": "hunter2",
-
-  "splitwise_consumer_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-  "splitwise_consumer_secret": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-  "splitwise_api_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-
-  "supercard_id": "email@gmail.com",
-  "supercard_pwd": "hunter2",
-  "supercard_last_bc_file": "/home/user/last_barcode_file"
+  "1password_service_account_token": "foo"
 }

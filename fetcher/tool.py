@@ -44,6 +44,7 @@ from . import google_play_mail
 from . import ib
 from . import ibplaywright
 from . import mbank
+from . import op
 from . import patreon
 from . import playwrightutils
 from .playwrightutils import Browser
@@ -141,13 +142,16 @@ def pull_coop_supercard(ctx) -> None:
     This command saves the PDFs in the download directory.
     """
     config = ctx.obj['config']
+    op_service_account_auth_token = extract_op_service_account_auth_token_from_config_or_fail(
+        config)
     service = FirefoxService(log_path=path.devnull)
     opts = webdriver.FirefoxOptions()
     opts.add_argument('-headless')
-    with webdriver.Firefox(options=opts, service=service) as driver:
+    with (webdriver.Firefox(options=opts, service=service) as driver,
+          op.set_service_account_auth_token(op_service_account_auth_token)):
         coop_supercard.fetch_and_save_receipts(
             driver,
-            extract_supercard_credentials(config),
+            coop_supercard.fetch_credentials(),
             Path(config['supercard_last_bc_file']),
             Path(config['download_directory']),
         )
@@ -274,7 +278,10 @@ def pull_degiro_portfolio(ctx) -> None:
 def pull_easyride_receipts(ctx) -> None:
     """Fetches EasyRide receipt PDFs."""
     config = ctx.obj['config']
-    gmail_creds = gmail.fetch_gmail_credentials()
+    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
+        config)
+    with op.set_service_account_auth_token(op_service_account_token):
+        gmail_creds = gmail.fetch_credentials()
     easyride.fetch_and_archive_receipts(
         gmail_creds,
         PurePath(config['download_directory']),
@@ -449,8 +456,12 @@ def pull_revolut(ctx, download_directory) -> None:
 def pull_revolut_mail(ctx) -> None:
     """Fetches Revolut statements shared through gmail."""
     config = ctx.obj['config']
+    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
+        config)
+    with op.set_service_account_auth_token(op_service_account_token):
+        gmail_credentials = gmail.fetch_credentials()
     revolut_mail.fetch_and_archive_statements(
-        extract_gmail_credentials(config),
+        gmail_credentials,
         PurePath(config['download_directory']),
     )
 
@@ -460,8 +471,11 @@ def pull_revolut_mail(ctx) -> None:
 def pull_splitwise(ctx) -> None:
     """Fetches the Splitwise statement."""
     config = ctx.obj['config']
-    creds = extract_splitwise_credentials(config)
-    csv = splitwise.export_balances_to_csv(splitwise.fetch_balances(creds))
+    op_service_account_auth_token = extract_op_service_account_auth_token_from_config_or_fail(
+        config)
+    with op.set_service_account_auth_token(op_service_account_auth_token):
+        creds = splitwise.fetch_credentials()
+        csv = splitwise.export_balances_to_csv(splitwise.fetch_balances(creds))
     sys.stdout.buffer.write(csv)
 
 
@@ -471,7 +485,10 @@ def pull_galaxus(ctx) -> None:
     """Fetches Digitec-Galaxus receipts in text format."""
     config = ctx.obj['config']
     download_directory = PurePath(config['download_directory'])
-    gmail_creds = extract_gmail_credentials(config)
+    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
+        config)
+    with op.set_service_account_auth_token(op_service_account_token):
+        gmail_creds = gmail.fetch_credentials()
     with contextlib.closing(gmail.connect(gmail_creds)) as inbox:
         for bill in galaxus.fetch_and_archive_bills(inbox):
             with open(download_directory / (bill.subject + '.galaxus'),
@@ -485,7 +502,10 @@ def pull_google_play_mail(ctx) -> None:
     """Fetches Google Play receipts in text format."""
     config = ctx.obj['config']
     download_directory = PurePath(config['download_directory'])
-    gmail_creds = extract_gmail_credentials(config)
+    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
+        config)
+    with op.set_service_account_auth_token(op_service_account_token):
+        gmail_creds = gmail.fetch_credentials()
     with contextlib.closing(gmail.connect(gmail_creds)) as inbox:
         for bill in google_play_mail.fetch_and_archive_bills(inbox):
             with open(download_directory / (bill.subject + '.email'),
@@ -498,8 +518,12 @@ def pull_google_play_mail(ctx) -> None:
 def pull_patreon(ctx) -> None:
     """Fetches Patreon receipts in text format."""
     config = ctx.obj['config']
+    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
+        config)
+    with op.set_service_account_auth_token(op_service_account_token):
+        gmail_creds = gmail.fetch_credentials()
     patreon.fetch_and_archive_receipts(
-        extract_gmail_credentials(config),
+        gmail_creds,
         PurePath(config['download_directory']),
     )
 
@@ -509,27 +533,23 @@ def pull_patreon(ctx) -> None:
 def pull_uber_eats(ctx) -> None:
     """Fetches Uber Eats receipts in text format."""
     config = ctx.obj['config']
+    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
+        config)
+    with op.set_service_account_auth_token(op_service_account_token):
+        creds = gmail.fetch_credentials()
+
     download_dir = PurePath(config['download_directory'])
-    for (title, content) in ubereats.fetch_and_archive_bills(
-            extract_gmail_credentials(config)):
+    for (title, content) in ubereats.fetch_and_archive_bills(creds):
         with open(download_dir / (title + '.ubereats'), 'w') as f:
             f.write(content)
 
 
-def extract_gmail_credentials(config: dict) -> gmail.Credentials:
-    return gmail.Credentials(id=config['gmail_id'], pwd=config['gmail_pwd'])
-
-
-def extract_supercard_credentials(config: dict) -> coop_supercard.Credentials:
-    return coop_supercard.Credentials(id=config['supercard_id'],
-                                      pwd=config['supercard_pwd'])
-
-
-def extract_splitwise_credentials(config: dict) -> splitwise.Credentials:
-    return splitwise.Credentials(
-        consumer_key=config['splitwise_consumer_key'],
-        consumer_secret=config['splitwise_consumer_secret'],
-        api_key=config['splitwise_api_key'])
+def extract_op_service_account_auth_token_from_config_or_fail(
+        config: dict) -> str:
+    token = config.get('1password_service_account_token')
+    if token is None:
+        raise Exception('1password_service_account_token not found in config.')
+    return token
 
 
 def main():

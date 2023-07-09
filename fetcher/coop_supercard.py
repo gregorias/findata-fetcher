@@ -26,8 +26,9 @@ class Credentials(NamedTuple):
 def fetch_credentials() -> Credentials:
     """Fetches credentials from my 1Password vault."""
     from . import op
-    username = op.read("Private", "supercard.ch", "username")
-    password = op.read("Private", "supercard.ch", "password")
+    vault = "Automated Findata"
+    username = op.read(vault, "supercard.ch", "username")
+    password = op.read(vault, "supercard.ch", "password")
     return Credentials(id=username, pwd=password)
 
 

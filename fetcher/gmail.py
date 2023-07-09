@@ -28,11 +28,13 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-def fetch_gmail_credentials() -> Credentials:
+def fetch_credentials() -> Credentials:
     """Fetches Gmail credentials from my 1Password vault."""
     from . import op
-    username = op.read("Private", "google.com", "username")
-    app_password = op.read("Private", "google.com", "app_password")
+    vault = "Automated Findata"
+    item = "Gmail"
+    username = op.read(vault, item, "username")
+    app_password = op.read(vault, item, "credential")
     return Credentials(id=username, pwd=app_password)
 
 
