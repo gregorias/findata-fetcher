@@ -396,20 +396,6 @@ def ib_set_up_incoming_deposit(source, amount) -> None:
 
 
 @cli.command()
-@click.pass_context
-def pull_ib(ctx) -> None:
-    """Pulls Interactive Brokers CSV file statement."""
-    config = read_config_from_context(ctx)
-    credentials = ibplaywright.fetch_credentials()
-    download_directory = PurePath(config['download_directory'])
-    service = FirefoxService(log_path=path.devnull)
-    # We need to use webdriverwire, because we need access to the `requests`
-    # API.
-    with webdriverwire.Firefox(service=service) as driver:
-        sys.stdout.buffer.write(ib.fetch_data(driver, credentials))
-
-
-@cli.command()
 def pull_mbank() -> None:
     """Fetches mBank's data and outputs a CSV file."""
     creds = mbank.fetch_credentials()

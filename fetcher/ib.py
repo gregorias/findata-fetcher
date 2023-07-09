@@ -119,44 +119,6 @@ def get_last_get_request(driver) -> Optional[request.Request]:
     return None
 
 
-def fetch_account_statement_csv(
-    headers: Dict[str, str],
-    cookies: Dict[str, str],
-) -> bytes:
-    FETCH_URL = ('https://www.interactivebrokers.co.uk' +
-                 '/AccountManagement/Statements/Run')
-    today = datetime.date.today()
-    payload = {
-        'format': 13,
-        'fromDate': format_date(quarter_ago(today)),
-        'reportDate': format_date(yesterday(today)),
-        'toDate': format_date(yesterday(today)),
-        'language': 'en',
-        'period': 'DATE_RANGE',
-        'statementCategory': 'DEFAULT_STATEMENT',
-        # There's also MTM_SUMMARY but that seems to have a strict subset of
-        # what DEFAULT_ACTIVITY has.
-        'statementType': 'DEFAULT_ACTIVITY'
-    }
-    headers = {
-        'AM_UUID': headers['am_uuid'],
-        'AccountHash': headers['accounthash'],
-        'Sec-GPS': '1',
-        'SessionId': headers['sessionid'],
-        'User-Agent': headers['user-agent'],
-    }
-    response = requests.get(
-        FETCH_URL,
-        params=payload,  # type: ignore
-        cookies=cookies,
-        headers=headers)
-    if not response.ok:
-        raise Exception("The statement fetch request has failed. " +
-                        ('Response reason: {0}, parameters: {1}'
-                         ).format(response.reason, (FETCH_URL, cookies)))
-    return decode_account_statement_fetch_response_content(response.content)
-
-
 class DepositSource(Enum):
     """Available deposit sources.
 
@@ -213,31 +175,3 @@ def set_up_incoming_deposit(driver: webdriver.remote.webdriver.WebDriver,
             "I have created the deposit intent, so you may need to cancel it.")
         instructions[labels[0].text] = labels[1].text
     return instructions
-
-
-def fetch_account_statement(
-        driver: webdriver.remote.webdriver.WebDriver) -> bytes:
-    logging.info("Going to the reports page.")
-    go_to_reports_page(driver)
-    logging.info("Reports page loaded, fetching cookies.")
-    last_get = get_last_get_request(driver)
-    if last_get is None:
-        raise Exception(
-            'Could not fetch the account statement, because we did not ' +
-            'find any previous GET requests in the session to initialize ' +
-            'the fetch requests ')
-    cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
-    logging.info("Fetching the CSV file.")
-    return fetch_account_statement_csv(dict(last_get.headers), cookies)
-
-
-def fetch_data(driver: webdriver.remote.webdriver.WebDriver,
-               creds: Credentials) -> bytes:
-    """Fetches Interactive Brokers's transaction data using Selenium
-
-    Returns:
-        A CSV with the fetched transactions.
-    """
-    driver.implicitly_wait(60)
-    login(driver, creds)
-    return fetch_account_statement(driver)
