@@ -136,7 +136,10 @@ def pull_bcgecc() -> None:
 
 @cli.command()
 @click.pass_context
-def pull_coop_supercard(ctx) -> None:
+@click.option('--headless/--no-headless',
+              default=True,
+              help='Run this command in a headless browser.')
+def pull_coop_supercard(ctx, headless: bool) -> None:
     """Fetches Coop receipt PDFs from supercard.ch.
 
     This command saves the PDFs in the download directory.
@@ -146,7 +149,8 @@ def pull_coop_supercard(ctx) -> None:
         config)
     service = FirefoxService(log_path=path.devnull)
     opts = webdriver.FirefoxOptions()
-    opts.add_argument('-headless')
+    if headless:
+        opts.add_argument('-headless')
     with (webdriver.Firefox(options=opts, service=service) as driver,
           op.set_service_account_auth_token(op_service_account_auth_token)):
         coop_supercard.fetch_and_save_receipts(
