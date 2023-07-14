@@ -138,8 +138,13 @@ def pull_bcgecc() -> None:
 @click.pass_context
 @click.option('--headless/--no-headless',
               default=True,
+              show_default=True,
               help='Run this command in a headless browser.')
-def pull_coop_supercard(ctx, headless: bool) -> None:
+@click.option('--verbose/--quiet',
+              default=False,
+              show_default=True,
+              help='Turn on verbose mode.')
+def pull_coop_supercard(ctx, headless: bool, verbose: bool) -> None:
     """Fetches Coop receipt PDFs from supercard.ch.
 
     This command saves the PDFs in the download directory.
@@ -147,18 +152,24 @@ def pull_coop_supercard(ctx, headless: bool) -> None:
     config = ctx.obj['config']
     op_service_account_auth_token = extract_op_service_account_auth_token_from_config_or_fail(
         config)
+    download_directory = Path(config['download_directory'])
+    last_bc_path = Path(config['supercard_last_bc_file'])
+    last_bc = coop_supercard.load_last_bc(last_bc_path)
+    if verbose:
+        print(f'Last pulled BC is {last_bc}.')
     service = FirefoxService(log_path=path.devnull)
     opts = webdriver.FirefoxOptions()
     if headless:
         opts.add_argument('-headless')
     with (webdriver.Firefox(options=opts, service=service) as driver,
           op.set_service_account_auth_token(op_service_account_auth_token)):
-        coop_supercard.fetch_and_save_receipts(
-            driver,
-            coop_supercard.fetch_credentials(),
-            Path(config['supercard_last_bc_file']),
-            Path(config['download_directory']),
-        )
+        creds: coop_supercard.Credentials = coop_supercard.fetch_credentials()
+        for coop_receipt in coop_supercard.fetch_receipts(
+                driver, creds, last_bc):
+            if verbose:
+                print(f'Saving a receipt with BC={coop_receipt.bc}.')
+            coop_supercard.save_receipt(download_directory, last_bc_path,
+                                        coop_receipt)
 
 
 @cli.command()
