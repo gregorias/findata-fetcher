@@ -115,6 +115,9 @@ def fetch_receipts(
 
 
 def load_last_bc(path: pathlib.Path) -> str | None:
+    if not path.is_file():
+        raise Exception(
+            f"The provided last BC filepath ({path}) is not present.")
     with open(path, 'r') as f:
         content = f.read()
     if len(content) == 0:
@@ -138,10 +141,6 @@ def fetch_and_save_receipts(
         creds: Credentials,
         last_bc_filepath: pathlib.Path,
         target_dir: pathlib.Path) -> None:
-    if not last_bc_filepath.is_file():
-        raise Exception(
-            f"The provided last_bc_filepath ({last_bc_filepath}) is not "
-            "present.")
     last_bc = load_last_bc(last_bc_filepath)
     for receipt in fetch_receipts(driver, creds, last_bc):
         # We save the receipts instead of just outputting them, because there
