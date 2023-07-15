@@ -42,7 +42,6 @@ from . import galaxus
 from . import gmail
 from . import google_play_mail
 from . import ib
-from . import ibplaywright
 from . import mbank
 from . import op
 from . import patreon
@@ -189,21 +188,22 @@ def cs_send_wire_to_ib(ctx, amount: str,
     config = read_config_from_context(ctx)
     ffc_config = config['cs_ib_for_further_credit_instructions']
 
-    wire_instructions_ib = ib.wire_instructions(
-        decode_ib_wire_instructions(wire_instructions_csv))
-    wire_instructions_cs = cs.WireInstructions(
-        amount=amount,
-        bank_routing_number=wire_instructions_ib.aba_routing_number,
-        beneficiary_account_number=wire_instructions_ib.bank_account_number,
-        for_further_credit=cs.ForFurtherCreditInstructions(
-            account_number=ffc_config['account_number'],
-            address=ffc_config['address'],
-            city_and_state=ffc_config['city_and_state'],
-            country=ffc_config['country'],
-            name=ffc_config['name'],
-            notes=ffc_config['notes'],
-        ),
-    )
+    raise NotImplementedError()
+    # wire_instructions_ib = ib.wire_instructions(
+    #    decode_ib_wire_instructions(wire_instructions_csv))
+    #  wire_instructions_cs = cs.WireInstructions(
+    #      amount=amount,
+    #      bank_routing_number=wire_instructions_ib.aba_routing_number,
+    #      beneficiary_account_number=wire_instructions_ib.bank_account_number,
+    #      for_further_credit=cs.ForFurtherCreditInstructions(
+    #          account_number=ffc_config['account_number'],
+    #          address=ffc_config['address'],
+    #          city_and_state=ffc_config['city_and_state'],
+    #          country=ffc_config['country'],
+    #          name=ffc_config['name'],
+    #          notes=ffc_config['notes'],
+    #      ),
+    #  )
 
     creds = cs.fetch_credentials()
 
@@ -346,13 +346,13 @@ def ib_cancel_pending_deposits() -> None:
 
         ib-cancel-pending-deposits
     """
-    credentials = ibplaywright.fetch_credentials()
+    credentials = ib.fetch_credentials()
 
     async def run():
         async with playwrightutils.new_page(Browser.FIREFOX,
                                             headless=False) as page:
-            await ibplaywright.login(page, credentials)
-            await ibplaywright.cancel_pending_deposits(page)
+            await ib.login(page, credentials)
+            await ib.cancel_pending_deposits(page)
 
     asyncio.run(run())
 
@@ -363,16 +363,15 @@ def ib_pull() -> None:
 
     Outputs the statement CSV to stdout.
     """
-    credentials = ibplaywright.fetch_credentials()
+    credentials = ib.fetch_credentials()
     downloads_path = Path('/tmp')
 
     async def run():
         async with playwrightutils.new_page(
                 Browser.FIREFOX, headless=False,
                 downloads_path=downloads_path) as page:
-            await ibplaywright.login(page, credentials)
-            statement = await ibplaywright.fetch_account_statement(
-                page, Path('/tmp'))
+            await ib.login(page, credentials)
+            statement = await ib.fetch_account_statement(page, Path('/tmp'))
             sys.stdout.buffer.write(statement)
 
     asyncio.run(run())
@@ -392,24 +391,40 @@ def ib_set_up_incoming_deposit(source, amount) -> None:
 
         ib-set-up-incoming-deposit --source=cs --amount=21.37
     """
-    credentials = ibplaywright.fetch_credentials()
-    service = FirefoxService(log_path=path.devnull)
-    with getFirefoxDriver() as driver:
-        driver.implicitly_wait(20)
-        ib.login(driver, credentials)
-        ib_source = (ib.DepositSource.BCGE
-                     if source == 'BCGE' else ib.DepositSource.CHARLES_SCHWAB)
-        instructions = ib.set_up_incoming_deposit(driver, ib_source,
-                                                  decimal.Decimal(amount))
-        writer = csv.DictWriter(sys.stdout,
-                                fieldnames=["key", "value"],
-                                delimiter=',')
-        writer.writeheader()
-        for key, value in instructions.items():
-            writer.writerow({
-                'key': key,
-                'value': value,
-            })
+    ib_source: ib.DepositSource = (ib.DepositSource.BCGE if source == 'BCGE'
+                                   else ib.DepositSource.CHARLES_SCHWAB)
+    credentials: ib.Credentials = ib.fetch_credentials()
+
+    async def run() -> ib.SourceBankDepositInformation:
+        async with playwrightutils.new_page(Browser.FIREFOX,
+                                            headless=False) as page:
+            await ib.login(page, credentials)
+            instructions: ib.SourceBankDepositInformation = (await ib.deposit(
+                page, ib_source, decimal.Decimal(amount)))
+            return instructions
+
+    instructions = asyncio.run(run())
+
+    writer = csv.DictWriter(sys.stdout,
+                            fieldnames=["key", "value"],
+                            delimiter=',')
+    writer.writeheader()
+    writer.writerow({
+        'key': 'transfer_to',
+        'value': instructions.transfer_to,
+    })
+    writer.writerow({
+        'key': 'iban',
+        'value': instructions.iban,
+    })
+    writer.writerow({
+        'key': 'beneficiary_bank',
+        'value': instructions.beneficiary_bank,
+    })
+    writer.writerow({
+        'key': 'for_further_credit',
+        'value': instructions.for_further_credit,
+    })
 
 
 @cli.command()

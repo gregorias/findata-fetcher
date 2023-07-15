@@ -1,25 +1,20 @@
 # -*- coding: utf-8 -*-
-"""Interactive Brokers interface."""
-import base64
+"""An interface for Interactive Brokers.
+
+It's similar to fetcher.ib but uses Playwright instead of Selenium.
+"""
 import datetime
-import dataclasses
 from decimal import Decimal
 from enum import Enum
-import json
-import logging
-from typing import Dict, NamedTuple, Optional
+import pathlib
+import re
+from typing import NamedTuple
+import playwright.async_api
 
-from selenium import webdriver
-from seleniumwire import request  # type: ignore
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.support.ui import WebDriverWait
-import requests
+from . import op
+from .playwrightutils import get_new_files
 
-from .dateutils import yesterday
-from .driverutils import (driver_cookie_jar_to_requests_cookies, get_parent,
-                          set_value)
+IB_DOMAIN = 'https://www.interactivebrokers.co.uk'
 
 
 class Credentials(NamedTuple):
@@ -27,96 +22,35 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-class WireInstructions(NamedTuple):
-    to_beneficiary_title: str
-    bank_account_number: str
-    aba_routing_number: str
-    swift_bic_code: str
-    beneficiary_bank: str
+def fetch_credentials() -> Credentials:
+    """Fetches the credentials from my 1Password vault.
 
-
-def wire_instructions(csv: dict[str, str]) -> WireInstructions:
+    This function blocks until the credentials are fetched.
     """
-    Constructs WireInstructions from the dict returned by `set_up_deposit`.
+    username = op.read('Private', 'Interactive Brokers', 'username')
+    password = op.read('Private', 'Interactive Brokers', 'password')
+    return Credentials(id=username, pwd=password)
 
-    :param csv dict[str, str]
-    :rtype WireInstructions
+
+async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
+    """Logs into Interactive Brokers.
+
+    Returns once the authentication process finishes. The page will contain
+    Charles Schwab's dashboard.
+
+    :param page playwright.async_api.Page: A blank page.
+    :param creds Credentials
+    :rtype None
     """
-    to_beneficiary_title = csv.get("Wire Funds to Beneficiary/Account Title")
-    bank_account_number = csv.get("Bank Account Number")
-    aba_routing_number = csv.get("ABA Routing Number")
-    swift_bic_code = csv.get("SWIFT/BIC Code")
-    beneficiary_bank = csv.get("Beneficiary Bank")
-
-    if (to_beneficiary_title is None or bank_account_number is None
-            or aba_routing_number is None or swift_bic_code is None
-            or beneficiary_bank is None):
-        raise Exception(
-            "Could not find one or more required fields for wire instructions."
-        )
-    return WireInstructions(to_beneficiary_title=to_beneficiary_title,
-                            bank_account_number=bank_account_number,
-                            aba_routing_number=aba_routing_number,
-                            swift_bic_code=swift_bic_code,
-                            beneficiary_bank=beneficiary_bank)
-
-
-def login(driver: webdriver.remote.webdriver.WebDriver,
-          creds: Credentials) -> None:
-    LOGIN_PAGE = 'https://www.interactivebrokers.co.uk/sso/Login?RL=1'
-    driver.get(LOGIN_PAGE)
-    driver.find_element(By.ID, "user_name").send_keys(creds.id + Keys.TAB)
-    driver.find_element(By.ID, "password").send_keys(creds.pwd + Keys.RETURN)
-    secondFactorSelect = driver.find_element(By.ID, 'sf_select')
-    IB_KEY_OPTION_VALUE = '5.2a'
-    set_value(driver, secondFactorSelect, IB_KEY_OPTION_VALUE)
-    driver.execute_script('arguments[0].onchange()', secondFactorSelect)
-    # It's a better design to make this function synchronous and wait for the
-    # login to be successful. It is more intuitive. When I use ib.login(...),
-    # then I expect that upon return of control. I can use issue further
-    # instructions in the logged in state.
-    wait_for_logged_in_state(driver)
-
-
-def wait_for_logged_in_state(
-        driver: webdriver.remote.webdriver.WebDriver) -> None:
-    wait = WebDriverWait(driver, 120)
-    wait.until(
-        expected_conditions.presence_of_element_located(
-            (By.XPATH, "//*[normalize-space(text()) = 'Your Portfolio']")))
-
-
-def go_to_reports_page(driver: webdriver.remote.webdriver.WebDriver) -> None:
-    driver.get("https://www.interactivebrokers.co.uk" +
-               "/AccountManagement/AmAuthentication?action=Statements")
-    # Wait for the page to load
-    driver.find_elements(
-        By.XPATH, "//*[normalize-space(text()) = 'MTM Summary']/../../..")
-
-
-def format_date(day: datetime.date) -> str:
-    return day.strftime("%Y%m%d")
-
-
-def quarter_ago(day: datetime.date) -> datetime.date:
-    return day - datetime.timedelta(days=90)
-
-
-def decode_account_statement_fetch_response_content(
-        response_content: bytes) -> bytes:
-    return base64.decodebytes(
-        json.loads(response_content)['fileContent'].encode('ascii'))
-
-
-def get_last_get_request(driver) -> Optional[request.Request]:
-    """Returns the last GET request made in this session.
-
-    This GET request can be useful to fetch headers used by the IB app.
-    """
-    for r in reversed(driver.requests):
-        if r.method == 'GET':
-            return r
-    return None
+    await page.goto(f"{IB_DOMAIN}/sso/Login")
+    await page.get_by_placeholder("Username").click()
+    await page.get_by_placeholder("Username").fill(creds.id)
+    await page.get_by_placeholder("Password").click()
+    await page.get_by_placeholder("Password").fill(creds.pwd)
+    await page.get_by_role("button", name="Login ").click()
+    IB_KEY_COMBOBOX_OPTION = "5.2a"
+    await page.get_by_role("combobox").select_option(IB_KEY_COMBOBOX_OPTION)
+    await page.wait_for_url("https://www.interactivebrokers.co.uk/portal/**")
 
 
 class DepositSource(Enum):
@@ -128,50 +62,130 @@ class DepositSource(Enum):
     BCGE = "Wire-BCGE"
 
 
-def set_up_incoming_deposit(driver: webdriver.remote.webdriver.WebDriver,
-                            source: DepositSource,
-                            value: Decimal) -> dict[str, str]:
+class SourceBankDepositInformation(NamedTuple):
+    transfer_to: str
+    iban: str
+    beneficiary_bank: str
+    for_further_credit: str
+
+
+async def deposit(page: playwright.async_api.Page, source: DepositSource,
+                  amount: Decimal) -> SourceBankDepositInformation:
+    """Initiates a deposit.
+
+    :param page playwright.async_api.Page: A page in a logged in state.
+    :param source DepositSource: The source of the deposit.
+    :param amount Decimal: The amount to deposit.
+    :rtype None
     """
-    Sets up an incoming deposit on IB.
+    assert amount > 0, f"Must deposit a positive amount, got f{amount}."
+    await page.goto(IB_DOMAIN + '/AccountManagement/AmAuthentication' +
+                    '?action=FUND_TRANSFERS&type=DEPOSIT')
+    await page.get_by_role("heading", name=source.value).click()
+    await page.get_by_placeholder("Required").click()
+    await page.keyboard.type(str(amount))
+    await page.get_by_role("link", name="Get Transfer Instructions").click()
 
-    :param driver webdriver.remote.webdriver.WebDriver
-    :param source DepositSource
-    :param value Decimal The deposit value.
-    :rtype dict[str, str] Wire instructions.
+    # Wait for the instructions to appear.
+    await page.get_by_text("Provide the following information" +
+                           " to your bank to initiate the transfer.").click()
+
+    #  await page.get_by_text("Transfer Funds to Beneficiary/Account Title"
+    #                         ).click()
+    async def extract_data_from_row(
+            row: playwright.async_api.Locator) -> tuple[str, str]:
+        labels = await row.locator('label').all()
+        tmp = []
+        for label in labels:
+            text_content = await label.text_content()
+            assert text_content, f"Expected a label f{label} to have text."
+            tmp.append(text_content.strip())
+        assert len(tmp) == 2, f"Expected two labels per row but got f{labels}."
+        return (tmp[0], tmp[1])
+
+    deposit_information_dict = {}
+
+    all_rows = await page.locator("wire-destination wire-destination-bank .row"
+                                  ).all()
+    for row in all_rows:
+        data_tuple = await extract_data_from_row(row)
+        deposit_information_dict[data_tuple[0]] = data_tuple[1]
+
+    for_further_benefit_row = page.locator(
+        "wire-destination" + " destination-further-benefit-to .row").first
+    for_further_benefit_tuple = await extract_data_from_row(
+        for_further_benefit_row)
+    deposit_information_dict[
+        for_further_benefit_tuple[0]] = for_further_benefit_tuple[1]
+
+    return SourceBankDepositInformation(
+        transfer_to=deposit_information_dict[
+            "Transfer Funds to Beneficiary/Account Title"],
+        iban=deposit_information_dict[
+            "International Bank Account Number (IBAN)"],
+        beneficiary_bank=deposit_information_dict["Beneficiary Bank"],
+        for_further_credit=deposit_information_dict[
+            "Payment Reference/For Further Credit to"])
+
+
+async def cancel_pending_deposits(page: playwright.async_api.Page) -> None:
     """
-    driver.get('https://www.interactivebrokers.co.uk' +
-               '/AccountManagement/AmAuthentication' +
-               '?action=FUND_TRANSFERS&type=DEPOSIT')
-    method_selector = driver.find_element(
-        By.XPATH, f"//span[normalize-space(text()) = '{source.value}']/../..")
-    method_selector_class = method_selector.get_attribute('class')
-    assert method_selector_class == 'method-selector', (
-        f"Expected to find a method selector element for f{source.name}" +
-        f", but found an element of class f{method_selector_class}." +
-        f" Something might have changed on the website since implementation.\n"
-    )
-    method_selector.click()
+    Cancels all pending deposits.
 
-    amount_input = driver.find_element(By.CSS_SELECTOR, 'input[name="amount"]')
-    amount_input.send_keys(str(value) + Keys.TAB)
-    submit_button = driver.find_element(
-        By.CSS_SELECTOR, '.form-group am-button[btn-type = "primary"]')
-    submit_button.click()
+    :param page playwright.async_api.Page: A page in a logged in state.
+    :return: None
+    """
+    await page.goto(IB_DOMAIN + '/AccountManagement/AmAuthentication' +
+                    '?action=TransactionHistory')
+    # Wait for the list of transfers to load.
+    await page.get_by_role(
+        "row", name=re.compile(".*Deposit.*Bank Transfer.*")).first.focus()
+    pending_deposits = await page.get_by_role(
+        "row", name=re.compile(".*Deposit.*Pending.*")).all()
+    for pending_deposit in pending_deposits:
+        await pending_deposit.click()
+        await page.get_by_role("link", name="Cancel Request").click()
+        await page.get_by_role("link", name="Yes").click()
+        # Wait for the cancellation to finish.
+        await page.get_by_role(
+            "heading", name='Your Deposit request has been cancelled').focus()
+        await page.get_by_role("button", name="Close").click()
 
-    # Verify success
-    driver.find_element(
-        By.XPATH, "//*[normalize-space(text()) = " +
-        "'Provide the following information to your bank to initiate the transfer.'"
-        + "]")
 
-    wire_instructions = driver.find_element(By.CSS_SELECTOR,
-                                            'wire-destination-bank')
-    instructions = {}
-    for row in wire_instructions.find_elements(By.CSS_SELECTOR, '.row'):
-        labels = row.find_elements(By.CSS_SELECTOR, 'label')
-        assert len(labels) == 2, (
-            "Expected each wire instructions row to contain two labels" +
-            f" but got {len(labels)}. Aborting. " +
-            "I have created the deposit intent, so you may need to cancel it.")
-        instructions[labels[0].text] = labels[1].text
-    return instructions
+def quarter_ago(day: datetime.date) -> datetime.date:
+    return day - datetime.timedelta(days=90)
+
+
+async def fetch_account_statement(page: playwright.async_api.Page,
+                                  download_dir: pathlib.Path) -> bytes:
+    """Fetches Interactive Brokers's account statement.
+
+    :param page playwright.async_api.Page: A page in a logged in state.
+    :return bytes: The statement CSV file.
+    """
+    await page.goto(IB_DOMAIN + '/AccountManagement/AmAuthentication' +
+                    '?action=Statements')
+    # Click the right arrow that goes to the dialog for the account statement.
+    await (page.get_by_role("paragraph").filter(has_text="MTM Summary")
+           # An XPath that selects the first parent that a class "row"
+           .locator("//ancestor::div[contains(@class, 'row')]").last.locator(
+               "a.btn-icon .fa-circle-arrow-right").click())
+    await page.locator("div.row", has_text="Period").last.get_by_role(
+        'combobox').select_option("string:DATE_RANGE")
+
+    today = datetime.date.today()
+    quarter_ago_str = quarter_ago(today).strftime("%Y-%m-%d")
+    for _ in range(2):
+        # For some reason, doing it only once doesn't work.
+        await page.locator("input[name=\"fromDate\"]").fill(quarter_ago_str)
+        await page.keyboard.press("Enter")
+
+    async with get_new_files(download_dir) as files_downloaded_event:
+        await (page.locator(".row", has_text='CSV').last.locator(
+            "a", has_text="Download").first.click())
+        await files_downloaded_event
+
+    for statement_filename in await files_downloaded_event:
+        with open(statement_filename, 'rb') as f:
+            return f.read()
+    raise Exception("Expected to download a statement but didn't.")

@@ -28,7 +28,6 @@ from fetcher import finpension
 from fetcher import galaxus
 from fetcher import gmail
 from fetcher import ib
-from fetcher import ibplaywright
 from fetcher.playwrightutils import Browser, get_browser_type
 from fetcher import revolut
 from fetcher import revolut_mail
