@@ -40,6 +40,11 @@ class Receipt(NamedTuple):
 def login(
         driver: webdriver.remote.webdriver.WebDriver,  # type: ignore
         creds: Credentials) -> None:
+    """Logs in to supercard.ch.
+
+    supercard.ch occasionally shows a Recaptcha and requires human
+    intervention.
+    """
     LOGIN_PAGE = 'https://login.supercard.ch/cas/login?locale=de&service=https://www.supercard.ch/de/app-digitale-services/meine-einkaeufe.html'
     driver.get(LOGIN_PAGE)
     driver.find_element(By.ID, "email").send_keys(creds.id + Keys.TAB)

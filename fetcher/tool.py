@@ -145,10 +145,13 @@ def pull_bcgecc() -> None:
               default=False,
               show_default=True,
               help='Turn on verbose mode.')
-def pull_coop_supercard(ctx, headless: bool, verbose: bool) -> None:
+def coop_supercard_pull(ctx, headless: bool, verbose: bool) -> None:
     """Fetches Coop receipt PDFs from supercard.ch.
 
     This command saves the PDFs in the download directory.
+
+    supercard.ch occasionally asks for a captcha. When this happens, human
+    intervention is required.
     """
     config = ctx.obj['config']
     op_service_account_auth_token = extract_op_service_account_auth_token_from_config_or_fail(
