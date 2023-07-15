@@ -2,6 +2,8 @@ pre-commit:
   commands:
     unit-tests:
       run: "./dev/bin/testall"
+    pythonrc-check:
+      run: "python pythonrc.py"
     toml-taplo:
       tags: style
       glob: "*.toml"

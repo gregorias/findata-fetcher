@@ -78,11 +78,13 @@ def open_and_save_on_success(file, mode):
 
 XDG_CONFIG_HOME = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser(
     '~/.config')
+FETCHER_CONFIG_DEFAULT: str = os.path.join(XDG_CONFIG_HOME, 'findata',
+                                           'fetcher.json')
 
 
 @click.group()
 @click.option('--config_file',
-              default=os.path.join(XDG_CONFIG_HOME, 'findata', 'fetcher.json'),
+              default=FETCHER_CONFIG_DEFAULT,
               type=click.File(mode='r'),
               help='The file containing the program\'s config ' +
               '(default: $XDG_CONFIG_HOME/findata/fetcher.json).')

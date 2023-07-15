@@ -2,6 +2,7 @@
 # I use this module for interactive debugging. It is automatically loaded
 # in my (b)python setup and provides convenient bindings.
 import asyncio
+import atexit
 from bs4 import BeautifulSoup  # type: ignore
 import decimal
 from enum import Enum
@@ -36,7 +37,7 @@ from fetcher import ubereats
 
 D = decimal.Decimal
 
-with open('config.json', 'r') as cf:
+with open(t.FETCHER_CONFIG_DEFAULT, 'r') as cf:
     config = json.load(cf)
     revolut_account_numbers = config['revolut_account_numbers']
     op_service_account_token = t.extract_op_service_account_auth_token_from_config_or_fail(
@@ -56,6 +57,7 @@ def start_driver_wire():
 
 
 loop = asyncio.new_event_loop()
+atexit.register(loop.close)
 
 
 def ruc(a):
