@@ -1,21 +1,16 @@
-# -*- coding: utf-8 -*-
 """Fetches Coop receipts from supercard.ch."""
 from collections.abc import Iterator
 from itertools import takewhile
 import os
 import pathlib
-from typing import NamedTuple
+from typing import NamedTuple, AsyncIterator
 from urllib.parse import parse_qs, urlparse
 
 import requests
-from selenium import webdriver  # type: ignore
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.support.ui import WebDriverWait  # type: ignore
+import playwright.async_api
 
-from .driverutils import driver_cookie_jar_to_requests_cookies
 from .fileutils import atomic_write
+from . import playwrightutils
 
 
 class Credentials(NamedTuple):
@@ -32,53 +27,43 @@ def fetch_credentials() -> Credentials:
     return Credentials(id=username, pwd=password)
 
 
-class Receipt(NamedTuple):
-    bc: str
-    pdf: bytes
-
-
-def login(
-        driver: webdriver.remote.webdriver.WebDriver,  # type: ignore
-        creds: Credentials) -> None:
+async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     """Logs in to supercard.ch.
 
     supercard.ch occasionally shows a Recaptcha and requires human
     intervention.
     """
     LOGIN_PAGE = 'https://login.supercard.ch/cas/login?locale=de&service=https://www.supercard.ch/de/app-digitale-services/meine-einkaeufe.html'
-    driver.get(LOGIN_PAGE)
-    driver.find_element(By.ID, "email").send_keys(creds.id + Keys.TAB)
-    driver.find_element(By.ID, "password").send_keys(creds.pwd + Keys.RETURN)
+    # Wait for the login page to load DOM, but not
+    # necessarily for all. Sometimes the page lags a lot
+    # (>30s) to load all resources that are not necessary
+    # for logging in.
+    await page.goto(LOGIN_PAGE, wait_until='domcontentloaded')
+    # Give some time for the site to load, since we
+    # skipped the full load.
+    import asyncio
+    await asyncio.sleep(5)
+    await page.locator('#email').fill(creds.id)
+    await page.keyboard.press("Tab")
+    await page.locator('#password').fill(creds.pwd)
+    await page.keyboard.press("Tab")
+    await page.locator("button.loginbtn").click()
 
 
-def get_receipt_urls(
-        driver: webdriver.remote.webdriver.WebDriver,  # type: ignore
-        last_bc: str | None) -> list[str]:
-    """Fetches receipts URLs in reverse chronological order."""
-    wait = WebDriverWait(driver, 10)
-    wait.until(
-        expected_conditions.presence_of_element_located(
-            (By.CLASS_NAME, "receipt-button")))
+class Receipt(NamedTuple):
+    bc: str
+    pdf: bytes
 
-    def button_to_url(b) -> str:
-        url = b.get_attribute('data-receipturl')
-        if url is None:
-            raise Exception("Expected the receipt button to have an url, " +
-                            f"but got {str(b)}")
-        return url
 
-    buttons = driver.find_elements(By.CLASS_NAME, "receipt-button")
-    urls = [button_to_url(b) for b in buttons]
+async def get_receipt_urls(page: playwright.async_api.Page) -> list[str]:
+    """Fetches receipts URLs in reverse chronological order.
 
-    if last_bc is None:
-        return urls
-
-    new_urls = list(takewhile(lambda u: extract_bc(u) != last_bc, urls))
-    if len(new_urls) == len(urls):
-        raise Exception("Could not find a receipt with the provided bc." +
-                        " Aborting the function, because that is unexpected " +
-                        "and something might be going wrong.")
-    return new_urls
+    An example URL looks like this: "https://www.supercard.ch/bin/coop/kbk/kassenzettelpoc?bc=n015LJj1UXYxwaaaaaaaaaaa_aaaaaaaaaaaaaaaaaaaaaaaaaaaaa&pdfType=receipt"
+    """
+    # Wait for the receipt buttons to appear.
+    await page.locator(".receipt-button").first.inner_html()
+    return await page.locator(".receipt-button").evaluate_all(
+        "ns => ns.map(n => n.getAttribute('data-receipturl'))")
 
 
 def fetch_receipt(url, cookies: dict) -> bytes:
@@ -102,21 +87,22 @@ def extract_bc(url: str) -> str:
     return bc
 
 
-def fetch_receipts(
-        driver: webdriver.remote.webdriver.WebDriver,  # type: ignore
-        creds: Credentials,
-        last_bc: str | None) -> Iterator[Receipt]:
+async def fetch_receipts(page: playwright.async_api.Page,
+                         context: playwright.async_api.BrowserContext,
+                         creds: Credentials,
+                         last_bc: str | None) -> AsyncIterator[Receipt]:
     """Fetches receipts from supercard.ch.
 
     Returns:
         Receipts newer than last_bc in chronological order.
     """
-    driver.implicitly_wait(30)
-    login(driver, creds)
-    for url in reversed(get_receipt_urls(driver, last_bc)):
-        cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
-        yield Receipt(bc=extract_bc(url),
-                      pdf=fetch_receipt(url, cookies=cookies))
+    await login(page, creds)
+    cookies = playwrightutils.playwright_cookie_jar_to_requests_cookies(
+        await context.cookies())
+    for url in await get_receipt_urls(page):
+        print(url)
+        bc = extract_bc(url)
+        yield Receipt(bc=bc, pdf=fetch_receipt(url, cookies=cookies))
 
 
 def load_last_bc(path: pathlib.Path) -> str | None:

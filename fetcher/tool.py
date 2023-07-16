@@ -161,19 +161,25 @@ def coop_supercard_pull(ctx, headless: bool, verbose: bool) -> None:
     last_bc = coop_supercard.load_last_bc(last_bc_path)
     if verbose:
         print(f'Last pulled BC is {last_bc}.')
-    service = FirefoxService(log_path=path.devnull)
-    opts = webdriver.FirefoxOptions()
-    if headless:
-        opts.add_argument('-headless')
-    with (webdriver.Firefox(options=opts, service=service) as driver,
-          op.set_service_account_auth_token(op_service_account_auth_token)):
+    with op.set_service_account_auth_token(op_service_account_auth_token):
         creds: coop_supercard.Credentials = coop_supercard.fetch_credentials()
-        for coop_receipt in coop_supercard.fetch_receipts(
-                driver, creds, last_bc):
-            if verbose:
-                print(f'Saving a receipt with BC={coop_receipt.bc}.')
-            coop_supercard.save_receipt(download_directory, last_bc_path,
-                                        coop_receipt)
+
+    async def run():
+        async with async_playwright() as pw:
+            browser = await pw.firefox.launch(headless=headless)
+            context = await browser.new_context(no_viewport=not headless)
+            page = await context.new_page()
+            async for coop_receipt in coop_supercard.fetch_receipts(
+                    page, context, creds, last_bc):
+                if verbose:
+                    print(f'Saving a receipt with BC={coop_receipt.bc}.')
+                coop_supercard.save_receipt(download_directory, last_bc_path,
+                                            coop_receipt)
+            await page.close()
+            await context.close()
+            await browser.close()
+
+    asyncio.run(run())
 
 
 @cli.command()
