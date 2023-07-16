@@ -20,3 +20,7 @@ commit-msg:
   commands:
     commitlint:
       run: "commitlint --edit={1}"
+post-checkout:
+  commands:
+    poetry-install:
+      run: poetry install
