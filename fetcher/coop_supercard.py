@@ -1,4 +1,5 @@
 """Fetches Coop receipts from supercard.ch."""
+import asyncio
 from collections.abc import Iterator
 from itertools import takewhile
 import os
@@ -41,7 +42,6 @@ async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     await page.goto(LOGIN_PAGE, wait_until='domcontentloaded')
     # Give some time for the site to load, since we
     # skipped the full load.
-    import asyncio
     await asyncio.sleep(5)
     await page.locator('#email').fill(creds.id)
     await page.keyboard.press("Tab")
@@ -97,10 +97,12 @@ async def fetch_receipts(page: playwright.async_api.Page,
         Receipts newer than last_bc in chronological order.
     """
     await login(page, creds)
+    urls = await get_receipt_urls(page)
+    # Wait 5 seconds to make sure that all background scripts have done their work.
+    await asyncio.sleep(5)
     cookies = playwrightutils.playwright_cookie_jar_to_requests_cookies(
         await context.cookies())
-    for url in await get_receipt_urls(page):
-        print(url)
+    for url in urls:
         bc = extract_bc(url)
         yield Receipt(bc=bc, pdf=fetch_receipt(url, cookies=cookies))
 

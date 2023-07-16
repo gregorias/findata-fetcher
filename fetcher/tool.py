@@ -173,8 +173,9 @@ def coop_supercard_pull(ctx, headless: bool, verbose: bool) -> None:
                     page, context, creds, last_bc):
                 if verbose:
                     print(f'Saving a receipt with BC={coop_receipt.bc}.')
-                coop_supercard.save_receipt(download_directory, last_bc_path,
-                                            coop_receipt)
+                coop_supercard.save_receipt(download_directory,
+                                            last_bc_path,
+                                            receipt=coop_receipt)
             await page.close()
             await context.close()
             await browser.close()
