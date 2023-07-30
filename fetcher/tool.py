@@ -276,17 +276,8 @@ def pull_degiro_account(ctx) -> None:
     """Fetches Degiro's account statement into a CSV file."""
     config = read_config_from_context(ctx)
     creds = degiro.fetch_credentials()
-    download_directory = PurePath(config['download_directory'])
     with getFirefoxDriver() as driver:
-        pull_degiro_account_statement_helper(driver, download_directory, creds)
-
-
-def pull_degiro_account_statement_helper(
-        driver: webdriver.remote.webdriver.WebDriver,
-        download_directory: PurePath, creds: degiro.Credentials) -> None:
-    with open_and_save_on_success(download_directory / 'degiro-account.csv',
-                                  'wb') as f:
-        f.write(degiro.fetch_account_statement(driver, creds))
+        sys.stdout.buffer.write(degiro.fetch_account_statement(driver, creds))
 
 
 @cli.command()
