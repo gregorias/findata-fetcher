@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from itertools import takewhile
 import os
 import pathlib
-from typing import NamedTuple, AsyncIterator
+from typing import Callable, NamedTuple, AsyncIterator
 from urllib.parse import parse_qs, urlparse
 
 import requests
@@ -87,24 +87,36 @@ def extract_bc(url: str) -> str:
     return bc
 
 
-async def fetch_receipts(page: playwright.async_api.Page,
-                         context: playwright.async_api.BrowserContext,
-                         creds: Credentials,
-                         last_bc: str | None) -> AsyncIterator[Receipt]:
-    """Fetches receipts from supercard.ch.
+async def fetch_receipt_urls(page: playwright.async_api.Page,
+                             creds: Credentials) -> list[str]:
+    """Fetches receipt URLs from supercard.ch.
 
     Returns:
-        Receipts newer than last_bc in chronological order.
+        A reverse chronological list of receipt URLs.
     """
     await login(page, creds)
-    urls = await get_receipt_urls(page)
-    # Wait 5 seconds to make sure that all background scripts have done their work.
-    await asyncio.sleep(5)
-    cookies = playwrightutils.playwright_cookie_jar_to_requests_cookies(
-        await context.cookies())
-    for url in urls:
+    return await get_receipt_urls(page)
+
+
+def get_chronological_unprocessed_urls(reverse_chronological_urls: list[str],
+                                       last_bc: str | None) -> list[str]:
+    """Returns a list of chronological URLs that have not been processed yet."""
+    chronological_urls = []
+    for url in reverse_chronological_urls:
+        if last_bc == extract_bc(url):
+            break
+        chronological_urls.append(url)
+    chronological_urls.reverse()
+    return chronological_urls
+
+
+def fetch_receipts(
+        chronological_urls: list[str],
+        fetch_receipt_cb: Callable[[str], bytes]) -> Iterator[Receipt]:
+    """Fetches receipts from the provided list."""
+    for url in chronological_urls:
         bc = extract_bc(url)
-        yield Receipt(bc=bc, pdf=fetch_receipt(url, cookies=cookies))
+        yield Receipt(bc=bc, pdf=fetch_receipt_cb(url))
 
 
 def load_last_bc(path: pathlib.Path) -> str | None:

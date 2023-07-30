@@ -169,8 +169,17 @@ def coop_supercard_pull(ctx, headless: bool, verbose: bool) -> None:
             browser = await pw.firefox.launch(headless=headless)
             context = await browser.new_context(no_viewport=not headless)
             page = await context.new_page()
-            async for coop_receipt in coop_supercard.fetch_receipts(
-                    page, context, creds, last_bc):
+            reverse_chronological_receipt_urls = await coop_supercard.fetch_receipt_urls(
+                page, creds)
+            # Wait 5 seconds to make sure that all background scripts have done their work.
+            await asyncio.sleep(5)
+            cookies = playwrightutils.playwright_cookie_jar_to_requests_cookies(
+                await context.cookies())
+            chronological_unprocessed_receipt_urls = coop_supercard.get_chronological_unprocessed_urls(
+                reverse_chronological_receipt_urls, last_bc)
+            for coop_receipt in coop_supercard.fetch_receipts(
+                    chronological_unprocessed_receipt_urls,
+                    lambda url: coop_supercard.fetch_receipt(url, cookies)):
                 if verbose:
                     print(f'Saving a receipt with BC={coop_receipt.bc}.')
                 coop_supercard.save_receipt(download_directory,
