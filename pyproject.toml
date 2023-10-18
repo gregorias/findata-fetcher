@@ -22,17 +22,18 @@ findata-fetcher = "fetcher.tool:main"
 Repository = "https://github.com/gregorias/findata-fetcher"
 
 [tool.poetry.dependencies]
-python = "^3.11"
-beautifulsoup4 = "^4.10"
+python = "^3.12"
+beautifulsoup4 = "^4.12.2"
 # Not 8.1.4 or 8.1.5, because https://github.com/pallets/click/issues/2558
 click = "^8,!=8.1.4,!=8.1.5"
 CurrencyConverter = "^0.17.6"
 # Needs to be at least 2.31: https://github.com/gregorias/findata-fetcher/pull/4.
 requests = "^2.31.0"
-selenium = "^4.8.3"
+selenium = "^4.14.0"
 selenium-wire = "^5.1.0"
-splitwise = "^2.5.0"
-playwright = "^1.32.1"
+setuptools = "^68.2.2"
+splitwise = "^3.0.0"
+playwright = "^1.39.0"
 
 [tool.poetry.group.dev.dependencies]
 bpython = "^0.24"
