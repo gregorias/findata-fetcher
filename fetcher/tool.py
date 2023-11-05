@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Fetch my accounting data into a CSV file.
 
@@ -24,7 +23,6 @@ import sys
 
 from selenium import webdriver  # type: ignore
 from selenium.webdriver.firefox.service import Service as FirefoxService  # type: ignore
-from seleniumwire import webdriver as webdriverwire  # type: ignore
 from playwright.async_api import async_playwright
 
 pw = async_playwright
@@ -267,16 +265,14 @@ def pull_cs_eac_history() -> None:
     creds = cs.fetch_credentials()
 
     async def run():
-        async with async_playwright() as pw:
-            # Doesn't work with Chrome. Can't login.
-            browser = await pw.firefox.launch(headless=False)
-            statement = await cs.download_eac_transaction_history(
-                await browser.new_page(), creds)
-            await browser.close()
+        # Doesn't work with Chrome. Can't login.
+        # Non-headless mode, because it requires manual OTP input.
+        async with playwrightutils.new_page(Browser.FIREFOX,
+                                            headless=False) as page:
+            return await cs.download_eac_transaction_history(page, creds)
 
-        sys.stdout.buffer.write(statement)
-
-    asyncio.run(run())
+    statement = asyncio.run(run())
+    sys.stdout.buffer.write(statement)
 
 
 @cli.command()
