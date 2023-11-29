@@ -154,10 +154,11 @@ async def new_page(
     responsive one. Defaults to False.
     """
     async with (async_playwright() as pw,
-                async_closing(
-                    get_browser_type(pw, browser_type).launch(
-                        headless=headless, downloads_path=downloads_path)) as
-                browser,
-                async_closing(browser.new_context(no_viewport=not headless)) as
-                context, async_closing(context.new_page()) as page):
+                async_closing(await
+                              get_browser_type(pw, browser_type).launch(
+                                  headless=headless,
+                                  downloads_path=downloads_path)) as browser,
+                async_closing(await
+                              browser.new_context(no_viewport=not headless)) as
+                context, async_closing(await context.new_page()) as page):
         yield page

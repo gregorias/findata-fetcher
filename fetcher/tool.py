@@ -31,7 +31,6 @@ import click
 from . import bcge
 from . import bcgecc
 from . import coop_supercard
-from .contextextra import async_closing
 from . import cs
 from . import degiro
 from . import easyride
