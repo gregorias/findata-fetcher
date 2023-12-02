@@ -48,8 +48,6 @@ async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     await page.get_by_placeholder("Password").click()
     await page.get_by_placeholder("Password").fill(creds.pwd)
     await page.get_by_role("button", name="Login ").click()
-    IB_KEY_COMBOBOX_OPTION = "5.2a"
-    await page.get_by_role("combobox").select_option(IB_KEY_COMBOBOX_OPTION)
     await page.wait_for_url("https://www.interactivebrokers.co.uk/portal/**")
 
 
