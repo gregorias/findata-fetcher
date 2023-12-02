@@ -26,9 +26,10 @@ async def do_nothing(p: playwright.async_api.Page):
     return
 
 
-async def select_eac_account_on_transaction_history_page(p):
-    await p.get_by_role("combobox").filter(has_text='grzegorzmilka').click()
-    await p.get_by_role("link", name="Equity Award Center").click()
+async def select_eac_account_on_transaction_history_page(
+        p: playwright.async_api.Page):
+    await p.locator('#account-selector').click()
+    await p.get_by_label("Equity Award Center").click()
 
 
 async def trigger_transaction_history_export(
@@ -38,19 +39,11 @@ async def trigger_transaction_history_export(
     await page.goto(
         'https://client.schwab.com/app/accounts/transactionhistory/#/')
     await select_account(page)
-    async with page.expect_popup() as popup_info:
-        await page.locator("#bttnExport button").click()
-    popup = await popup_info.value
-
-    try:
-        await popup.locator(
-            '#ctl00_WebPartManager1_wpExportDisclaimer_ExportDisclaimer_btnOk'
-        ).click()
-    except playwright._impl._api_types.Error as e:  # type: ignore
-        if not e.message.startswith("Target closed"):
-            raise e
-        # Playwright for some reason throws "Target closed" error after the
-        # click. It doesn't interfere with the download so, just ignore it.
+    # The export button click doesn't work without waiting for a proper load.
+    await asyncio.sleep(1)
+    await page.get_by_label("Export", exact=True).click()
+    await page.locator("#csv use").click()
+    await page.get_by_role("button", name="Export").click()
 
 
 async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
