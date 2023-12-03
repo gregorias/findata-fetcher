@@ -113,9 +113,8 @@ def pull_bcge(ctx) -> None:
 
     async def run():
         async with playwrightutils.new_page(
-                Browser.FIREFOX, downloads_path=download_directory) as p:
+                Browser.CHROMIUM, downloads_path=download_directory) as p:
             statement = await bcge.fetch_account_statement(p, credentials)
-            await browser.close()
 
         sys.stdout.buffer.write(statement)
 

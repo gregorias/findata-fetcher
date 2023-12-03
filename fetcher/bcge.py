@@ -53,7 +53,8 @@ async def trigger_statement_export(page: playwright.async_api.Page) -> None:
     await iframe.get_by_text("Mit Strichpunkt getrennt (CSV)").click()
     await iframe.get_by_text("Saldo zu jeder Buchung").click()
     await iframe.get_by_text('Von').click()
-    await page.keyboard.type("01.04.2023")
+    await page.keyboard.type("01.07.2023")
+    await asyncio.sleep(1)
     await iframe.get_by_role("button", name="Jetzt herunterladen").click()
 
 
