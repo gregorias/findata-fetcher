@@ -43,7 +43,7 @@ async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     await page.get_by_label("Vertragsnummer").press("Tab")
     await page.get_by_label("Passwort").fill(creds.pwd)
     await page.get_by_role("button", name="Login").click()
-    await page.wait_for_url('https://connect.bcge.ch/#/')
+    await page.wait_for_url('https://connect.bcge.ch/')
 
 
 async def trigger_statement_export(page: playwright.async_api.Page) -> None:
