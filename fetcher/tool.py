@@ -112,11 +112,9 @@ def pull_bcge(ctx) -> None:
     download_directory = PurePath(config['download_directory'])
 
     async def run():
-        async with async_playwright() as pw:
-            browser = await pw.firefox.launch(
-                headless=False, downloads_path=download_directory)
-            statement = await bcge.fetch_account_statement(
-                await browser.new_page(), credentials)
+        async with playwrightutils.new_page(
+                Browser.FIREFOX, downloads_path=download_directory) as p:
+            statement = await bcge.fetch_account_statement(p, credentials)
             await browser.close()
 
         sys.stdout.buffer.write(statement)
