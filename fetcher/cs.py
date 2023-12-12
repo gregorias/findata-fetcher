@@ -1,5 +1,6 @@
 """Charles Schwab browser automation tools."""
 import asyncio
+import enum
 import pathlib
 from typing import Callable, NamedTuple, Awaitable
 
@@ -12,6 +13,12 @@ from fetcher.playwrightutils import intercept_download
 class Credentials(NamedTuple):
     id: str
     pwd: str
+
+
+class StatementFormat(enum.Enum):
+    """Statement formats."""
+    CSV = "CSV"
+    JSON = "JSON"
 
 
 def fetch_credentials() -> Credentials:
@@ -33,16 +40,16 @@ async def select_eac_account_on_transaction_history_page(
 
 
 async def trigger_transaction_history_export(
-    page: playwright.async_api.Page,
-    select_account: Callable[[playwright.async_api.Page], Awaitable[None]]
-) -> None:
+        page: playwright.async_api.Page,
+        select_account: Callable[[playwright.async_api.Page], Awaitable[None]],
+        format: StatementFormat = StatementFormat.CSV) -> None:
     await page.goto(
         'https://client.schwab.com/app/accounts/transactionhistory/#/')
     await select_account(page)
     # The export button click doesn't work without waiting for a proper load.
     await asyncio.sleep(1)
     await page.get_by_label("Export", exact=True).click()
-    await page.locator("#csv use").click()
+    await page.locator("label").filter(has_text=format.value).click()
     await page.get_by_role("button", name="Export").click()
 
 
@@ -95,7 +102,8 @@ async def download_eac_transaction_history(page: playwright.async_api.Page,
     await login(page, creds)
     async with intercept_download(page) as download:
         await trigger_transaction_history_export(
-            page, select_eac_account_on_transaction_history_page)
+            page, select_eac_account_on_transaction_history_page,
+            StatementFormat.JSON)
     return download.downloaded_content()
 
 
