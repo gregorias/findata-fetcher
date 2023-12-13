@@ -45,7 +45,6 @@ from . import patreon
 from . import playwrightutils
 from .playwrightutils import Browser
 from . import revolut
-from . import revolut_mail
 from . import splitwise
 from . import ubereats
 
@@ -469,21 +468,6 @@ def pull_revolut(ctx, download_directory) -> None:
                 await browser.close()
 
     asyncio.run(run())
-
-
-@cli.command()
-@click.pass_context
-def pull_revolut_mail(ctx) -> None:
-    """Fetches Revolut statements shared through gmail."""
-    config = ctx.obj['config']
-    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
-        config)
-    with op.set_service_account_auth_token(op_service_account_token):
-        gmail_credentials = gmail.fetch_credentials()
-    revolut_mail.fetch_and_archive_statements(
-        gmail_credentials,
-        PurePath(config['download_directory']),
-    )
 
 
 @cli.command()

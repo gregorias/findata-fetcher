@@ -30,7 +30,6 @@ from fetcher import gmail
 from fetcher import ib
 from fetcher.playwrightutils import Browser, get_browser_type
 from fetcher import revolut
-from fetcher import revolut_mail
 from fetcher import splitwise
 from fetcher import ubereats
 
