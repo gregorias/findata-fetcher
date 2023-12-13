@@ -12,53 +12,15 @@ import requests
 from fetcher.playwrightutils import preserve_new_file
 
 
-class Credentials(NamedTuple):
-    country_code: str
-    phone_number: str
-    pin: str
-
-
-def fetch_credentials() -> Credentials:
-    """Fetches credentials from my 1Password vault."""
-    from . import op
-    country_code = op.read("Private", "Revolut", "country_code")
-    phone_number = op.read("Private", "Revolut", "phone_number")
-    pin = op.read("Private", "Revolut", "PIN")
-    return Credentials(country_code=country_code,
-                       phone_number=phone_number,
-                       pin=pin)
-
-
-async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
+async def login(page: playwright.async_api.Page) -> None:
     """
     Logs in to Revolut.
 
     :param page playwright.async_api.Page
-    :param creds Credentials
     :rtype None
     """
     await page.goto('https://app.revolut.com/start')
-
-    country = page.locator('input[aria-label="Country"]')
-    await country.click()
-    # Let the dropdown appear.
-    await asyncio.sleep(0.5)
-    await country.type(creds.country_code)
-    # Let the search results appear.
-    await asyncio.sleep(0.5)
-    await page.keyboard.press('ArrowDown')
-    await page.keyboard.press('Enter')
-
-    await page.locator('input[name="phoneNumber"]').focus()
-    await page.keyboard.type(creds.phone_number)
-
-    await page.locator('button[type="submit"]').click()
-
-    await page.locator('input[type="password"]').focus()
-    await page.keyboard.type(creds.pin)
-    await asyncio.sleep(0.5)
-    await page.keyboard.press('Enter')
-
+    # Assuming that the user uses the QR code login method.
     await page.wait_for_url('https://app.revolut.com/home')
 
 
@@ -73,9 +35,7 @@ async def accept_cookies_on_revolut(page: playwright.async_api.Page) -> None:
 
 async def dismiss_cookie_consent_dialog(
         page: playwright.async_api.Page) -> None:
-    await page.locator(
-        "//button/span[normalize-space(text()) = 'Allow all cookies']").click(
-            timeout=0)
+    await page.get_by_role("button", name="Allow all cookies").click(timeout=0)
 
 
 class MonthYear(NamedTuple):
@@ -134,7 +94,8 @@ async def download_statement(page: playwright.async_api.Page,
     :param from_my MonthYear
     """
     await page.goto(f'https://app.revolut.com/accounts/{account_no}/statement')
-    await page.locator("//button[normalize-space(text()) = 'Excel']").click()
+    await page.get_by_role("tab", name="Excel").click()
+
     await page.locator("//div[normalize-space(text()) = 'Starting on']/.."
                        ).click()
 
@@ -166,18 +127,17 @@ async def download_statement(page: playwright.async_api.Page,
 
 
 async def download_statements(page: playwright.async_api.Page,
-                              download_dir: pathlib.Path, creds: Credentials,
+                              download_dir: pathlib.Path,
                               account_nos: list[str]) -> None:
     """
     Downloads Revolut's account statements.
 
     :param page playwright.async_api.Page
     :param download_dir pathlib.Path
-    :param creds Credentials
     :param account_nos list[str]
     :rtype None
     """
-    await login(page, creds)
+    await login(page)
     await accept_cookies_on_revolut(page)
     for account_no in account_nos:
         async with preserve_new_file(download_dir) as file_downloaded_event:

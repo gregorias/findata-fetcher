@@ -451,21 +451,17 @@ def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
     type=click.Path(exists=True, file_okay=False, writable=True),
 )
 @click.pass_context
-def pull_revolut(ctx, download_directory) -> None:
+def revolut_pull(ctx, download_directory) -> None:
     """Fetches Revolut data into CSV files."""
     config = read_config_from_context(ctx)
-    creds = revolut.fetch_credentials()
     download_directory = Path(download_directory)
 
     async def run():
-        async with asyncio.timeout(80):
-            async with async_playwright() as pw:
-                browser = await pw.firefox.launch(
-                    headless=False, downloads_path=download_directory)
-                await revolut.download_statements(
-                    await browser.new_page(), download_directory, creds,
-                    config['revolut_account_numbers'])
-                await browser.close()
+        async with playwrightutils.new_page(
+                browser_type=Browser.FIREFOX,
+                downloads_path=download_directory) as p:
+            await revolut.download_statements(
+                p, download_directory, config['revolut_account_numbers'])
 
     asyncio.run(run())
 
