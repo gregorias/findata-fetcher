@@ -44,29 +44,4 @@ instructions](https://click.palletsprojects.com/en/8.1.x/shell-completion/#enabl
     pipenv shell # If not already using pipenv
     python -m fetcher.tool --help
 
-## Development notes
-
-This section is meant for developers and provides instruction on how to work with the repository.
-
-### Dev Environment Setup
-
-This project requires [Lefthook](https://github.com/evilmartians/lefthook) and
-[Commitlint](https://github.com/conventional-changelog/commitlint).
-
-Set up Pipenv:
-
-    pipenv install --dev
-
-Install lefthook:
-
-    lefthook install
-
-Also install [direnv](https://direnv.net/) to benefit from some dev tools.
-
-### Testing
-
-To run tests, use `testall`.
-
-To run tests and check for coverage, use `coverage`.
-
 [click]: https://click.palletsprojects.com/en/8.1.x/
