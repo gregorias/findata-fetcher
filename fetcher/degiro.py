@@ -1,18 +1,17 @@
-# -*- coding: utf-8 -*-
-"""Fetches account statement from Degiro"""
+"""Fetches account statements from Degiro."""
 from datetime import date, timedelta
-import time
-from typing import NamedTuple, Tuple
+from enum import Enum
 import logging
+from typing import NamedTuple, Optional
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.support.ui import WebDriverWait
-import requests
+import playwright.async_api
 
-from .driverutils import driver_cookie_jar_to_requests_cookies
+from .playwrightutils import intercept_download
+
+Page = playwright.async_api.Page
+PlaywrightTimeOutError = playwright.async_api.TimeoutError
+
+logger = logging.getLogger('fetcher.degiro')
 
 
 class Credentials(NamedTuple):
@@ -20,42 +19,58 @@ class Credentials(NamedTuple):
     pwd: str
 
 
+class StatementType(Enum):
+    """Possible statement types."""
+    ACCOUNT = "Account"
+    PORTFOLIO = "Portfolio"
+
+
 def fetch_credentials() -> Credentials:
-    """Fetches credentials from my 1Password vault."""
+    """Fetches Degiro credentials from my 1Password vault."""
     from . import op
     username = op.read("Private", "degiro.nl", "username")
     password = op.read("Private", "degiro.nl", "password")
     return Credentials(id=username, pwd=password)
 
 
-def login(creds: Credentials,
-          driver: webdriver.remote.webdriver.WebDriver) -> None:
-    logging.info("Logging in.")
-    LOGIN_PAGE = 'https://trader.degiro.nl/login/chde/#/login'
-    driver.get(LOGIN_PAGE)
-    driver.find_element(By.ID, "username").send_keys(creds.id + Keys.TAB)
-    driver.find_element(By.ID, "password").send_keys(creds.pwd + Keys.RETURN)
+def fetch_totp() -> str:
+    """Fetches Degiro TOTP from my 1Password vault."""
+    from . import op
+    return op.fetch_totp("Private", "degiro.nl")
 
 
-def wait_for_login(driver: webdriver.remote.webdriver.WebDriver):
-    logging.info("Waiting for login.")
-    wait = WebDriverWait(driver, 30)
-    wait.until(
-        expected_conditions.url_matches(
-            'https://trader.degiro.nl/trader/#/markets'))
+async def dismiss_cookies_consent_dialog(page: Page,
+                                         timeout: Optional[timedelta]) -> None:
+    await page.get_by_role("button", name="Allow all cookies").click(
+        timeout=timeout / timedelta(milliseconds=1) if timeout else None)
 
 
-def fetch_csv(url: str, cookies) -> bytes:
-    headers = {
-        'user-agent': ('Mozilla/5.0 (X11; Linux x86_64; rv:84.0) ' +
-                       'Gecko/20100101 Firefox/84.0'),
-    }
-    response = requests.get(url, headers=headers, cookies=cookies)
-    if not response.ok:
-        raise Exception("The URL fetch request has failed. " +
-                        ('Response reason: {0}, parameters: {1}'
-                         ).format(response.reason, (url, cookies)))
-    return response.content
+async def login(page: Page, creds: Credentials) -> None:
+    """Logs in to Degiro."""
+    logger.info("Logging in to Degiro.")
+    await page.goto("https://trader.degiro.nl/login/chde/#/login")
+    try:
+        logging.info("Waiting for a cookie consent dialog.")
+        await dismiss_cookies_consent_dialog(page,
+                                             timeout=timedelta(seconds=2))
+    except PlaywrightTimeOutError:
+        logging.info("The cookie consent dialog hasn't appeared. Proceeding.")
+        # If there's no cookie consent dialog, then just proceed.
+        pass
+    logger.info("Entering login credentials.")
+    await page.locator("#username").fill(creds.id)
+    password_input = page.locator("#password")
+    await password_input.fill(creds.pwd)
+    await password_input.press("Enter")
+    logger.info("Entering TOTP.")
+    totp_input = page.get_by_placeholder("012345")
+    await totp_input.fill(fetch_totp())
+    await totp_input.press("Enter")
+    await page.wait_for_url("https://trader.degiro.nl/trader/#/markets")
+
+
+def get_three_months_ago(start_date: date) -> date:
+    return start_date - timedelta(93)
 
 
 def get_account_overview_url(from_date: date, to_date: date) -> str:
@@ -69,88 +84,40 @@ def get_account_overview_url(from_date: date, to_date: date) -> str:
         )
 
 
-def get_three_months_ago(start_date: date) -> date:
-    return start_date - timedelta(93)
-
-
-def fetch_account(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
-    logging.info("Fetching account.")
-    driver.get(
+async def go_to_account_page(page: Page) -> None:
+    logging.info("Going to account page.")
+    await page.goto(
         get_account_overview_url(
             from_date=get_three_months_ago(date.today()),
             to_date=date.today(),
         ))
-    exportButton = driver.find_element(By.CSS_SELECTOR,
-                                       '[data-name="exportButton"]')
-    exportButton.click()
-    time.sleep(2)
-    reportExportForm = driver.find_element(By.CSS_SELECTOR,
-                                           '[data-name="reportExportForm"]')
-    csvLink = reportExportForm.find_element(
-        By.XPATH, "//a[normalize-space(text()) = 'CSV']")
-    csvFetchUrl = csvLink.get_attribute('href')
-    if not csvFetchUrl:
-        raise Exception("The CSV export link was not found.")
-    cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
-    return fetch_csv(csvFetchUrl, cookies)
 
 
-def fetch_portfolio(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
-    logging.info("Fetching portfolio.")
-    portfolioSideBarLink = driver.find_element(By.CSS_SELECTOR,
-                                               '[href="#/portfolio"]')
-    portfolioSideBarLink.click()
-    exportButton = driver.find_element(By.CSS_SELECTOR,
-                                       '[data-name="exportButton"]')
-    exportButton.click()
-    time.sleep(2)
-    reportExportForm = driver.find_element(By.CSS_SELECTOR,
-                                           '[data-name="reportExportForm"]')
-    csvLink = reportExportForm.find_element(
-        By.XPATH, "//a[normalize-space(text()) = 'CSV']")
-    csvFetchUrl = csvLink.get_attribute('href')
-    if not csvFetchUrl:
-        raise Exception("The CSV export link was not found.")
-    cookies = driver_cookie_jar_to_requests_cookies(driver.get_cookies())
-    return fetch_csv(csvFetchUrl, cookies)
+async def go_to_portfolio_page(page: Page) -> None:
+    logging.info("Going to portfolio page.")
+    await page.get_by_role("link", name="Portfolio", exact=True).click()
 
 
-def fetch_account_statement(driver: webdriver.remote.webdriver.WebDriver,
-                            creds: Credentials) -> bytes:
-    """Fetches Degiro's account statement using Selenium
+async def export_csv(page: Page) -> bytes:
+    logging.info("Exporting Degiro CSV.")
+    async with intercept_download(page) as download:
+        await page.get_by_role("button", name="Export").click()
+        await page.get_by_role("link", name="CSV").click()
+    return download.downloaded_content()
 
-    Returns:
-        A CSV UTF-8 encoded statement.
+
+async def fetch_statement(page: Page, statement_type: StatementType) -> bytes:
     """
-    driver.implicitly_wait(30)
-    login(creds, driver)
-    wait_for_login(driver)
-    return fetch_account(driver)
+    Fetches a statement from Degiro.
 
-
-def fetch_portfolio_statement(driver: webdriver.remote.webdriver.WebDriver,
-                              creds: Credentials) -> bytes:
-    """Fetches Degiro's portfolio statement using Selenium
-
-    Returns:
-        A CSV UTF-8 encoded statement.
+    :param page: A logged-in page.
+    :param statement_type
+    :return: A CSV file.
     """
-    driver.implicitly_wait(30)
-    login(creds, driver)
-    wait_for_login(driver)
-    return fetch_portfolio(driver)
-
-
-def fetch_all(driver: webdriver.remote.webdriver.WebDriver,
-              creds: Credentials) -> Tuple[bytes, bytes]:
-    """Fetches Degiro's account & portfolio statements using Selenium
-
-    Returns:
-        A CSV UTF-8 encoded statement.
-    """
-    driver.implicitly_wait(30)
-    login(creds, driver)
-    wait_for_login(driver)
-    portfolio_stmt = fetch_portfolio(driver)
-    account_stmt = fetch_account(driver)
-    return (account_stmt, portfolio_stmt)
+    if statement_type == StatementType.ACCOUNT:
+        await go_to_account_page(page)
+    elif statement_type == StatementType.PORTFOLIO:
+        await go_to_portfolio_page(page)
+    else:
+        raise Exception("Unknown statement type: {0}.".format(statement_type))
+    return await export_csv(page)

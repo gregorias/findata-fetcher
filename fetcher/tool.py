@@ -275,23 +275,27 @@ def pull_cs_eac_history() -> None:
 
 @cli.command()
 @click.pass_context
-def pull_degiro_account(ctx) -> None:
-    """Fetches Degiro's account statement into a CSV file."""
-    config = read_config_from_context(ctx)
-    creds = degiro.fetch_credentials()
-    with getFirefoxDriver() as driver:
-        sys.stdout.buffer.write(degiro.fetch_account_statement(driver, creds))
+def degiro_account_pull(ctx) -> None:
+    """Fetches Degiro's account statement and outputs a CSV file."""
+    asyncio.run(degiro_pull(ctx, degiro.StatementType.ACCOUNT))
 
 
 @cli.command()
 @click.pass_context
-def pull_degiro_portfolio(ctx) -> None:
+def degiro_portfolio_pull(ctx) -> None:
     """Fetches Degiro's portfolio statement and outputs a CSV file."""
+    asyncio.run(degiro_pull(ctx, degiro.StatementType.PORTFOLIO))
+
+
+async def degiro_pull(ctx, statement_type: degiro.StatementType) -> None:
     config = read_config_from_context(ctx)
     creds = degiro.fetch_credentials()
-    with getFirefoxDriver() as driver:
-        sys.stdout.buffer.write(degiro.fetch_portfolio_statement(
-            driver, creds))
+    async with playwrightutils.new_page(Browser.FIREFOX,
+                                        headless=False) as page:
+        await degiro.login(page, creds)
+        statement = await degiro.fetch_statement(page, statement_type)
+
+    sys.stdout.buffer.write(statement)
 
 
 @cli.command()

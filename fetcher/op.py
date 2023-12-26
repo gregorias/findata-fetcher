@@ -41,3 +41,15 @@ def read(vault: str, item: str, field: str) -> str:
         raise OpError(
             f"Could not read {field}. 1Password outputted: f{op_read.stderr}")
     return op_read.stdout
+
+
+def fetch_totp(vault: str, item: str) -> str:
+    """Fetches a TOTP of an item in a vault."""
+    op_read = subprocess.run(
+        ["op", "item", "get", "--otp", f"--vault={vault}", item],
+        capture_output=True,
+        text=True)
+    if op_read.returncode != 0:
+        raise OpError(
+            f"Could not read TOTP. 1Password outputted: f{op_read.stderr}")
+    return op_read.stdout
