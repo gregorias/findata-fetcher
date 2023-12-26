@@ -83,8 +83,11 @@ FETCHER_CONFIG_DEFAULT: str = os.path.join(XDG_CONFIG_HOME, 'findata',
               type=click.File(mode='r'),
               help='The file containing the program\'s config ' +
               '(default: $XDG_CONFIG_HOME/findata/fetcher.json).')
+@click.option('--logtostderr/--no-logtostderr',
+              default=False,
+              help='Whether to log to STDERR.')
 @click.pass_context
-def cli(ctx, config_file: typing.TextIO):
+def cli(ctx, config_file: typing.TextIO, logtostderr: bool):
     config = json.load(config_file)
     assert isinstance(config, dict)
 
@@ -94,7 +97,7 @@ def cli(ctx, config_file: typing.TextIO):
         logging.basicConfig(filename=config[LOGGING_FILE_CFG_KEY],
                             level=logging.DEBUG)
     stderr = logging.StreamHandler()
-    stderr.setLevel(logging.WARNING)
+    stderr.setLevel(logging.INFO if logtostderr else logging.WARNING)
     logging.getLogger('').addHandler(stderr)
 
 
