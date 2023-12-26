@@ -6,6 +6,10 @@ pre-commit:
     pythonrc-check:
       tags: test
       run: "python pythonrc.py"
+    markdownlint:
+      tags: documentation style
+      glob: "*.md"
+      run: markdownlint {staged_files}
     toml-taplo:
       tags: style
       glob: "*.toml"
