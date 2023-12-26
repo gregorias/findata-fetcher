@@ -6,6 +6,7 @@ It's similar to fetcher.ib but uses Playwright instead of Selenium.
 import datetime
 from decimal import Decimal
 from enum import Enum
+import logging
 import pathlib
 import re
 from typing import NamedTuple
@@ -14,12 +15,23 @@ import playwright.async_api
 from . import op
 from .playwrightutils import get_new_files
 
+logger = logging.getLogger('fetcher.ib')
+
 IB_DOMAIN = 'https://www.interactivebrokers.co.uk'
 
 
 class Credentials(NamedTuple):
     id: str
     pwd: str
+
+
+class StatementType(Enum):
+    """Possible statement types.
+
+    The value corresponds to the statement name on the statements page.
+    """
+    ACTIVITY = "Activity"
+    MTM = "MTM Summary"
 
 
 def fetch_credentials() -> Credentials:
@@ -154,20 +166,24 @@ def quarter_ago(day: datetime.date) -> datetime.date:
     return day - datetime.timedelta(days=90)
 
 
-async def fetch_account_statement(page: playwright.async_api.Page,
-                                  download_dir: pathlib.Path) -> bytes:
+async def fetch_statement(page: playwright.async_api.Page,
+                          statement_type: StatementType,
+                          download_dir: pathlib.Path) -> bytes:
     """Fetches Interactive Brokers's account statement.
 
     :param page playwright.async_api.Page: A page in a logged in state.
     :return bytes: The statement CSV file.
     """
+    logger.info("Visiting the statements page.")
     await page.goto(IB_DOMAIN + '/AccountManagement/AmAuthentication' +
                     '?action=Statements')
-    # Click the right arrow that goes to the dialog for the account statement.
-    await (page.get_by_role("paragraph").filter(has_text="MTM Summary")
-           # An XPath that selects the first parent that a class "row"
-           .locator("//ancestor::div[contains(@class, 'row')]").last.locator(
-               "a.btn-icon .fa-circle-arrow-right").click())
+    # Click the right
+    await page.locator("section.panel").filter(
+        has_text="Default Statements"
+    ).locator(".row").filter(has_text=statement_type.value
+                             ).last.locator("a.btn-icon").filter(
+                                 has=page.locator("i.fa-circle-arrow-right")
+                             ).click()
     await page.locator("div.row", has_text="Period").last.get_by_role(
         'combobox').select_option("string:DATE_RANGE")
 

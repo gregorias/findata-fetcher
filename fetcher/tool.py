@@ -366,8 +366,8 @@ def ib_cancel_pending_deposits() -> None:
 
 
 @cli.command()
-def ib_pull() -> None:
-    """Pulls an Interactive Brokers' account statement.
+def ib_activity_pull() -> None:
+    """Pulls Interactive Brokers' activity statement.
 
     Outputs the statement CSV to stdout.
     """
@@ -379,7 +379,9 @@ def ib_pull() -> None:
                 Browser.FIREFOX, headless=False,
                 downloads_path=downloads_path) as page:
             await ib.login(page, credentials)
-            statement = await ib.fetch_account_statement(page, Path('/tmp'))
+            statement = await ib.fetch_statement(page,
+                                                 ib.StatementType.ACTIVITY,
+                                                 Path('/tmp'))
             sys.stdout.buffer.write(statement)
 
     asyncio.run(run())
