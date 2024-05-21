@@ -28,7 +28,7 @@ beautifulsoup4 = "^4.12.2"
 click = "^8,!=8.1.4,!=8.1.5"
 CurrencyConverter = "^0.17.6"
 # Needs to be at least 2.31: https://github.com/gregorias/findata-fetcher/pull/4.
-requests = "^2.31.0"
+requests = "^2.32.0"
 selenium = "^4.14.0"
 selenium-wire = "^5.1.0"
 setuptools = "^69"
