@@ -30,13 +30,11 @@ CurrencyConverter = "^0.17.6"
 # Needs to be at least 2.31: https://github.com/gregorias/findata-fetcher/pull/4.
 requests = "^2.31.0"
 selenium = "^4.14.0"
-selenium-wire = "^5.1.0"
 setuptools = "^69"
 splitwise = "^3.0.0"
 playwright = "^1.41.0"
 
 [tool.poetry.group.dev.dependencies]
-bpython = "^0.24"
 types-requests = "==2.25.*"
 packaging = "*"
 rope = "*"

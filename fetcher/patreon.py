@@ -2,17 +2,16 @@
 """This module fetches the Patreon monthly receipt email."""
 import contextlib
 import email.message
-from pathlib import PurePath
-from imaplib import IMAP4
 import time
-from typing import List
+from pathlib import PurePath
 
 from . import gmail
 
 
 def get_text_payload(msg: email.message.Message) -> str:
     try:
-        return list(msg.walk())[0].get_payload()[0].get_payload()
+        return str(list(
+            msg.walk())[0].get_payload()[0].get_payload())  # type: ignore
     except IndexError as e:
         raise Exception(
             "Couldn't fetch the patreon receipt, " +

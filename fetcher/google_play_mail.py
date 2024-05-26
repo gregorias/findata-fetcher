@@ -19,7 +19,8 @@ def search_for_inbox_mails(
 
 def extract_bill_text(msg: email.message.Message) -> str:
     """Extracts the bill text from the message."""
-    return list(msg.walk())[1].get_payload(decode=True).decode('utf-8')
+    payload = list(msg.walk())[1].get_payload(decode=True)
+    return payload.decode('utf-8')  # type: ignore
 
 
 @dataclasses.dataclass

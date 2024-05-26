@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 """This module fetches Digitec-Galaxus bills."""
 
-import bs4
-import contextlib
 import dataclasses
 import email
-from imaplib import IMAP4
-from typing import Generator, Tuple
 import quopri
-import unicodedata
+from typing import Generator
+
+import bs4
 
 from . import gmail
 from .emailutils import decoded_header_to_str
@@ -26,7 +24,7 @@ def search_for_inbox_mails(inbox: gmail.InboxProtocol) -> Generator:
 
 
 def get_payload(msg: email.message.Message) -> str:
-    payload_bytes = quopri.decodestring(msg.get_payload())
+    payload_bytes = quopri.decodestring(msg.get_payload())  # type: ignore
     payload_string = payload_bytes.decode('utf-8').replace('\xa0', ' ')
     soup = bs4.BeautifulSoup(payload_string, 'html.parser')
     tables_with_total = [
@@ -45,9 +43,8 @@ def get_payload(msg: email.message.Message) -> str:
         raise Exception('Could not find bill entries element')
 
     entries = '\n'.join([
-        l
-        for l in bill_entries_element.get_text('\n', strip=True).splitlines()
-        if l != '-'
+        line for line in bill_entries_element.get_text(
+            '\n', strip=True).splitlines() if line != '-'
     ])
     payment = [
         t for t in soup.find_all('table') if 'Zahlungsmittel' in t.text

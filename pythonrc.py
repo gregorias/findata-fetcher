@@ -3,35 +3,19 @@
 # in my (b)python setup and provides convenient bindings.
 import asyncio
 import atexit
-from bs4 import BeautifulSoup  # type: ignore
 import decimal
-from enum import Enum
-from selenium import webdriver
-from selenium.webdriver.common.by import By  # type: ignore
-from seleniumwire import webdriver as webdriverwire  # type: ignore
-from playwright.async_api import async_playwright
-import email
 import json
 import pathlib
-import requests
+
 import playwright
+from playwright.async_api import async_playwright
+from selenium import webdriver
 
 import fetcher.tool as t
-from fetcher.driverutils import driver_cookie_jar_to_requests_cookies
-from fetcher.playwrightutils import playwright_cookie_jar_to_requests_cookies
-from fetcher import bcge
-from fetcher import bcgecc
-from fetcher import coop_supercard
-from fetcher import cs
-from fetcher import degiro
-from fetcher import finpension
-from fetcher import galaxus
-from fetcher import gmail
-from fetcher import ib
-from fetcher.playwrightutils import Browser, get_browser_type
-from fetcher import revolut
-from fetcher import splitwise
-from fetcher import ubereats
+from fetcher.playwrightutils import (
+    Browser,
+    get_browser_type,
+)
 
 D = decimal.Decimal
 
@@ -44,12 +28,6 @@ with open(t.FETCHER_CONFIG_DEFAULT, 'r') as cf:
 
 def start_driver():
     driver = webdriver.Firefox()
-    driver.implicitly_wait(20)
-    return driver
-
-
-def start_driver_wire():
-    driver = webdriverwire.Firefox()
     driver.implicitly_wait(20)
     return driver
 

@@ -1,19 +1,17 @@
-# -*- coding: utf-8 -*-
 """This module fetches the Uber Eats bill email."""
 import contextlib
 import email.message
 import quopri
-from pathlib import PurePath
-from typing import Generator, List, Tuple
+from typing import Generator, Tuple
 
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup
 
 from . import gmail
 
 
 def get_html_payload(msg: email.message.Message) -> str:
     try:
-        return list(msg.walk())[0].get_payload()
+        return str(list(msg.walk())[0].get_payload())
     except IndexError as e:
         raise Exception(
             "Couldn't fetch the Uber Eats bill, " +
