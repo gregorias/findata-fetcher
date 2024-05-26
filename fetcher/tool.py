@@ -6,47 +6,47 @@ Usage: python -m fetcher.tool --help
 
 import asyncio
 import contextlib
-from contextlib import contextmanager
 import csv
-import datetime
 import decimal
-import functools
 import json
 import logging
-from os import path
 import os
-from pathlib import Path, PurePath
-import tempfile
-import typing
 import shutil
 import sys
+import tempfile
+import typing
+from contextlib import contextmanager
+from os import path
+from pathlib import Path, PurePath
 
+import click
+from playwright.async_api import async_playwright
 from selenium import webdriver  # type: ignore
 from selenium.webdriver.firefox.service import Service as FirefoxService  # type: ignore
-from playwright.async_api import async_playwright
+
+from . import (
+    bcge,
+    bcgecc,
+    coop_supercard,
+    cs,
+    degiro,
+    easyride,
+    finpension,
+    galaxus,
+    gmail,
+    google_play_mail,
+    ib,
+    mbank,
+    op,
+    patreon,
+    playwrightutils,
+    revolut,
+    splitwise,
+    ubereats,
+)
+from .playwrightutils import Browser
 
 pw = async_playwright
-import click
-
-from . import bcge
-from . import bcgecc
-from . import coop_supercard
-from . import cs
-from . import degiro
-from . import easyride
-from . import finpension
-from . import galaxus
-from . import gmail
-from . import google_play_mail
-from . import ib
-from . import mbank
-from . import op
-from . import patreon
-from . import playwrightutils
-from .playwrightutils import Browser
-from . import revolut
-from . import splitwise
-from . import ubereats
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
 
@@ -200,8 +200,8 @@ def cs_send_wire_to_ib(ctx, amount: str,
 
         cs-send-wire-to-ib --amount=21.37 WIRE_INSTRUCTIONS_CSV
     """
-    config = read_config_from_context(ctx)
-    ffc_config = config['cs_ib_for_further_credit_instructions']
+    # config = read_config_from_context(ctx)
+    # ffc_config = config['cs_ib_for_further_credit_instructions']
 
     raise NotImplementedError()
     # wire_instructions_ib = ib.wire_instructions(
@@ -220,17 +220,17 @@ def cs_send_wire_to_ib(ctx, amount: str,
     #      ),
     #  )
 
-    creds = cs.fetch_credentials()
+    #  creds = cs.fetch_credentials()
 
-    async def run():
-        async with async_playwright() as pw:
-            browser = await pw.firefox.launch(headless=False)
-            page = await browser.new_page()
-            await cs.send_wire_to_ib(page, creds, wire_instructions_cs)
-            await page.pause()
-            await browser.close()
+    #  async def run():
+    #      async with async_playwright() as pw:
+    #          browser = await pw.firefox.launch(headless=False)
+    #          page = await browser.new_page()
+    #          await cs.send_wire_to_ib(page, creds, wire_instructions_cs)
+    #          await page.pause()
+    #          await browser.close()
 
-    asyncio.run(run())
+    #  asyncio.run(run())
 
 
 @cli.command()
@@ -288,7 +288,6 @@ def degiro_portfolio_pull(ctx) -> None:
 
 
 async def degiro_pull(ctx, statement_type: degiro.StatementType) -> None:
-    config = read_config_from_context(ctx)
     creds = degiro.fetch_credentials()
     async with playwrightutils.new_page(Browser.FIREFOX,
                                         headless=False) as page:
