@@ -1,19 +1,33 @@
 pre-commit:
   commands:
-    unit-tests:
-      tags: test
-      run: "./dev/bin/testall"
     pythonrc-check:
       tags: test
       run: "python pythonrc.py"
     markdownlint:
       tags: documentation style
+      files: git diff --name-only --cached --diff-filter=AM
       glob: "*.md"
-      run: markdownlint {staged_files}
-    toml-taplo:
+      run: markdownlint {files}
+    poetry-check:
+      tags: lint
+      glob: "pyproject.toml"
+      run: poetry check
+    ruff:
+      tags: lint
+      glob: "*.py"
+      run: ruff check {staged_files}
+    ruff-imports:
+      tags: style import
+      glob: "*.py"
+      run: ruff check --select=I001 {staged_files}
+    toml-taplo-lint:
       tags: style
       glob: "*.toml"
       run: taplo check {staged_files}
+    toml-taplo-fmt:
+      tags: style
+      glob: "*.toml"
+      run: taplo fmt --check {staged_files}
     yaml-prettier:
       tags: style
       glob: "*.{yml,yaml}"
@@ -22,6 +36,9 @@ pre-commit:
       tags: style
       glob: "*.py"
       run: yapf -i -r {staged_files} && git add {staged_files}
+    unit-tests:
+      tags: test
+      run: "./dev/bin/testall"
 commit-msg:
   commands:
     commitlint:
