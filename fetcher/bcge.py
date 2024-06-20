@@ -48,7 +48,7 @@ async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
 
 async def trigger_statement_export(page: playwright.async_api.Page) -> None:
     iframe = page.frame_locator("iframe")
-    await iframe.get_by_role("button", name="Alle Bewegungen").click()
+    await iframe.get_by_role("button", name="Bewegungen ansehen").click()
     await iframe.get_by_role("button", name="Herunterladen").click()
     await iframe.get_by_text("Mit Strichpunkt getrennt (CSV)").click()
     await iframe.get_by_text("Saldo zu jeder Buchung").click()
