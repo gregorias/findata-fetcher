@@ -25,14 +25,14 @@ Repository = "https://github.com/gregorias/findata-fetcher"
 python = "^3.12"
 beautifulsoup4 = "^4.12.2"
 # Not 8.1.4 or 8.1.5, because https://github.com/pallets/click/issues/2558
-click = "^8,!=8.1.4,!=8.1.5"
+click = "^8.1.7,!=8.1.4,!=8.1.5"
 CurrencyConverter = "^0.17.6"
 # Needs to be at least 2.31: https://github.com/gregorias/findata-fetcher/pull/4.
-requests = "^2.31.0"
+requests = "^2.32.3"
 selenium = "^4.14.0"
 setuptools = "^69"
 splitwise = "^3.0.0"
-playwright = "^1.41.0"
+playwright = "^1.45.0"
 
 [tool.poetry.group.dev.dependencies]
 types-requests = "==2.25.*"
