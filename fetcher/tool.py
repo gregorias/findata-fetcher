@@ -162,7 +162,9 @@ def coop_supercard_pull(ctx, headless: bool, verbose: bool) -> None:
 
     async def run():
         async with async_playwright() as pw:
-            browser = await pw.firefox.launch(headless=headless)
+            # Use Chromium. In July 2024, Firefox stopped working: the login
+            # page was loading indefinitely.
+            browser = await pw.chromium.launch(headless=headless)
             context = await browser.new_context(no_viewport=not headless)
             page = await context.new_page()
             reverse_chronological_receipt_urls = await coop_supercard.fetch_receipt_urls(
