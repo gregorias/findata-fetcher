@@ -1,8 +1,7 @@
 """Charles Schwab browser automation tools."""
 import asyncio
 import enum
-import pathlib
-from typing import Callable, NamedTuple, Awaitable
+from typing import Awaitable, Callable, NamedTuple
 
 import playwright
 import playwright.async_api
