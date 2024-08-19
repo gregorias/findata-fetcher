@@ -28,7 +28,6 @@ from . import (
     bcge,
     bcgecc,
     coop_supercard,
-    cs,
     degiro,
     easyride,
     finpension,
@@ -202,37 +201,7 @@ def cs_send_wire_to_ib(ctx, amount: str,
 
         cs-send-wire-to-ib --amount=21.37 WIRE_INSTRUCTIONS_CSV
     """
-    # config = read_config_from_context(ctx)
-    # ffc_config = config['cs_ib_for_further_credit_instructions']
-
     raise NotImplementedError()
-    # wire_instructions_ib = ib.wire_instructions(
-    #    decode_ib_wire_instructions(wire_instructions_csv))
-    #  wire_instructions_cs = cs.WireInstructions(
-    #      amount=amount,
-    #      bank_routing_number=wire_instructions_ib.aba_routing_number,
-    #      beneficiary_account_number=wire_instructions_ib.bank_account_number,
-    #      for_further_credit=cs.ForFurtherCreditInstructions(
-    #          account_number=ffc_config['account_number'],
-    #          address=ffc_config['address'],
-    #          city_and_state=ffc_config['city_and_state'],
-    #          country=ffc_config['country'],
-    #          name=ffc_config['name'],
-    #          notes=ffc_config['notes'],
-    #      ),
-    #  )
-
-    #  creds = cs.fetch_credentials()
-
-    #  async def run():
-    #      async with async_playwright() as pw:
-    #          browser = await pw.firefox.launch(headless=False)
-    #          page = await browser.new_page()
-    #          await cs.send_wire_to_ib(page, creds, wire_instructions_cs)
-    #          await page.pause()
-    #          await browser.close()
-
-    #  asyncio.run(run())
 
 
 @cli.command()
@@ -241,19 +210,8 @@ def pull_cs_account_history() -> None:
 
     Prints the CSV file to STDOUT.
     """
-    creds = cs.fetch_credentials()
-
-    async def run():
-        async with async_playwright() as pw:
-            # Doesn't work with Chrome. Can't login.
-            browser = await pw.firefox.launch(headless=False)
-            statement = await cs.download_brokerage_account_transaction_history(
-                await browser.new_page(), creds)
-            await browser.close()
-
-        sys.stdout.buffer.write(statement)
-
-    asyncio.run(run())
+    # Stopped working in July 2024, the login page was blocking me.
+    raise NotImplementedError()
 
 
 @cli.command()
@@ -262,17 +220,8 @@ def pull_cs_eac_history() -> None:
 
     Prints the CSV file to STDOUT.
     """
-    creds = cs.fetch_credentials()
-
-    async def run():
-        # Doesn't work with Chrome. Can't login.
-        # Non-headless mode, because it requires manual OTP input.
-        async with playwrightutils.new_page(Browser.FIREFOX,
-                                            headless=False) as page:
-            return await cs.download_eac_transaction_history(page, creds)
-
-    statement = asyncio.run(run())
-    sys.stdout.buffer.write(statement)
+    # Stopped working in July 2024, the login page was blocking me.
+    raise NotImplementedError()
 
 
 @cli.command()
