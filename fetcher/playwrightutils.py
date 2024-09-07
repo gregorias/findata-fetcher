@@ -2,15 +2,15 @@
 
 import asyncio
 import contextlib
-from enum import Enum
 import os
 import pathlib
+import shutil
+import typing
+from enum import Enum
+from typing import Optional
+
 import playwright.async_api
 from playwright.async_api import async_playwright
-import shutil
-import time
-import typing
-from typing import AsyncIterator, Optional, TypedDict
 
 from .contextextra import async_closing
 

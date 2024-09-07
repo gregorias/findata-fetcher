@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """This module implements useful Gmail functionality."""
 import email
+import typing
 from email.header import decode_header
 from imaplib import IMAP4, IMAP4_SSL
-import typing
-from typing import List, NamedTuple, Optional, Tuple
+from typing import List, NamedTuple, Tuple
 
 
 class InboxProtocol(typing.Protocol):

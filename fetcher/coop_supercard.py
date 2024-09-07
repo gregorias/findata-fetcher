@@ -1,17 +1,15 @@
 """Fetches Coop receipts from supercard.ch."""
 import asyncio
-from collections.abc import Iterator
-from itertools import takewhile
 import os
 import pathlib
-from typing import Callable, NamedTuple, AsyncIterator
+from collections.abc import Iterator
+from typing import Callable, NamedTuple
 from urllib.parse import parse_qs, urlparse
 
-import requests
 import playwright.async_api
+import requests
 
 from .fileutils import atomic_write
-from . import playwrightutils
 
 
 class Credentials(NamedTuple):

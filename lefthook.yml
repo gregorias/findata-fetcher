@@ -19,7 +19,8 @@ pre-commit:
     ruff-imports:
       tags: style import
       glob: "*.py"
-      run: ruff check --select=I001 {staged_files}
+      run: ruff check --select=I001 --fix {staged_files}
+      stage_fixed: true
     toml-taplo-lint:
       tags: style
       glob: "*.toml"

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """Fetches account statements from Revolut."""
 import asyncio
-from datetime import date, timedelta
 import pathlib
+from datetime import date, timedelta
 from typing import NamedTuple
 
 import playwright
 import playwright.async_api
-import requests
 
 from fetcher.playwrightutils import preserve_new_file
 

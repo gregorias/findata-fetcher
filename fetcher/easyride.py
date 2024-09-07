@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 """This module EasyRide Quittung from Gmail."""
 import contextlib
-from email.header import decode_header
 from pathlib import PurePath
-from imaplib import IMAP4
-from typing import List
 
 from . import gmail
 
