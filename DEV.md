@@ -24,13 +24,14 @@ Also install [direnv](https://direnv.net/) to benefit from some dev tools.
 
 ## Updating dependencies
 
-To update dependencies, run
-
-To update dependencies, run
+To update locked dependencies, run
 
 ```shell
 poetry update
 ```
+
+From time to time, check if the major versions of dependencies in
+`pyproject.toml` need updating.
 
 ## Testing
 
