@@ -22,6 +22,16 @@ lefthook install
 
 Also install [direnv](https://direnv.net/) to benefit from some dev tools.
 
+## Updating dependencies
+
+To update dependencies, run
+
+To update dependencies, run
+
+```shell
+poetry update
+```
+
 ## Testing
 
 To run tests, use `testall`.
