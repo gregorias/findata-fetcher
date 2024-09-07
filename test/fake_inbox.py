@@ -1,9 +1,7 @@
 """A fake implementation of gmail.InboxProtocol for testing purposes."""
-from dataclasses import dataclass
 import email
 import enum
-
-from fetcher.gmail import InboxProtocol
+from dataclasses import dataclass
 
 
 @enum.unique
@@ -33,13 +31,13 @@ class FakeInbox:
     def archive(self, num: bytes):
         """Archives a message.
         """
-        assert (type(num) is bytes)
+        assert (isinstance(num, bytes))
         idx = int(num) - 1
         assert idx < len(self.entries) and idx >= 0, f'Invalid idx ({idx})'
         self.entries[int(num) - 1].state = ENTRY_STATE.ARCHIVE
 
     def fetch(self, num: bytes):
-        assert (type(num) is bytes)
+        assert (isinstance(num, bytes))
         idx = int(num) - 1
         assert idx < len(self.entries) and idx >= 0, f'Invalid idx ({idx})'
         return self.entries[int(num) - 1].msg
