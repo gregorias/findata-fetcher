@@ -38,3 +38,17 @@ From time to time, check if the major versions of dependencies in
 To run tests, use `testall`.
 
 To run tests and check for coverage, use `coverage`.
+
+## ADRs
+
+### Use Playwright in favor of Selenium
+
+I need to use a browser automation technology, and I decided to use Playwright:
+
+- Playwright comes with a code generator tool.
+- I found that Playwright comes with more relevant functionality, e.g.,
+  capturing downloads.
+
+> [!note]
+> I still use Selenium in some fetchers. It’s legacy code to be removed
+> whenever I have to change those fetchers.
