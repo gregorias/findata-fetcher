@@ -6,6 +6,8 @@ from typing import List, NamedTuple, Tuple
 
 import splitwise  # type: ignore
 
+from . import op
+
 
 class Credentials(NamedTuple):
     consumer_key: str
@@ -13,14 +15,14 @@ class Credentials(NamedTuple):
     api_key: str
 
 
-def fetch_credentials() -> Credentials:
+async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
     """Fetches credentials from my 1Password vault."""
-    from . import op
-    op_vault = "Automated Findata"
     op_item = "Splitwise"
-    consumer_key = op.read(op_vault, op_item, "consumer key")
-    consumer_secret = op.read(op_vault, op_item, "credential")
-    api_key = op.read(op_vault, op_item, "api key")
+    consumer_key = await op_client.read(op.FINDATA_VAULT, op_item,
+                                        "consumer key")
+    consumer_secret = await op_client.read(op.FINDATA_VAULT, op_item,
+                                           "credential")
+    api_key = await op_client.read(op.FINDATA_VAULT, op_item, "api key")
     return Credentials(consumer_key=consumer_key,
                        consumer_secret=consumer_secret,
                        api_key=api_key)

@@ -1,11 +1,12 @@
 """Fetches account statements from Degiro."""
+import logging
 from datetime import date, timedelta
 from enum import Enum
-import logging
 from typing import NamedTuple, Optional
 
 import playwright.async_api
 
+from . import op
 from .playwrightutils import intercept_download
 
 Page = playwright.async_api.Page
@@ -25,18 +26,19 @@ class StatementType(Enum):
     PORTFOLIO = "Portfolio"
 
 
-def fetch_credentials() -> Credentials:
+async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
     """Fetches Degiro credentials from my 1Password vault."""
-    from . import op
-    username = op.read("Private", "degiro.nl", "username")
-    password = op.read("Private", "degiro.nl", "password")
+    item = "degiro.nl"
+    username = await op_client.read(op.FINDATA_VAULT, item, "username")
+    password = await op_client.read(op.FINDATA_VAULT, item, "password")
     return Credentials(id=username, pwd=password)
 
 
-def fetch_totp() -> str:
+def fetch_totp(token: str) -> str:
     """Fetches Degiro TOTP from my 1Password vault."""
     from . import op
-    return op.fetch_totp("Private", "degiro.nl")
+    with op.set_service_account_auth_token(token):
+        return op.fetch_totp(op.FINDATA_VAULT, "degiro.nl")
 
 
 async def dismiss_cookies_consent_dialog(page: Page,
@@ -45,7 +47,7 @@ async def dismiss_cookies_consent_dialog(page: Page,
         timeout=timeout / timedelta(milliseconds=1) if timeout else None)
 
 
-async def login(page: Page, creds: Credentials) -> None:
+async def login(page: Page, creds: Credentials, op_token: str) -> None:
     """Logs in to Degiro."""
     logger.info("Logging in to Degiro.")
     await page.goto("https://trader.degiro.nl/login/chde/#/login")
@@ -64,7 +66,7 @@ async def login(page: Page, creds: Credentials) -> None:
     await password_input.press("Enter")
     logger.info("Entering TOTP.")
     totp_input = page.get_by_placeholder("012345")
-    await totp_input.fill(fetch_totp())
+    await totp_input.fill(fetch_totp(op_token))
     await totp_input.press("Enter")
     await page.wait_for_url("https://trader.degiro.nl/trader/#/markets")
 

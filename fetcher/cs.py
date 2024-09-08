@@ -6,6 +6,7 @@ from typing import Awaitable, Callable, NamedTuple
 import playwright
 import playwright.async_api
 
+from fetcher import op
 from fetcher.playwrightutils import intercept_download
 
 
@@ -20,11 +21,11 @@ class StatementFormat(enum.Enum):
     JSON = "JSON"
 
 
-def fetch_credentials() -> Credentials:
+async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
     """Fetches credentials from my 1Password vault."""
-    from . import op
-    username = op.read("Private", "Charles Schwab", "username")
-    password = op.read("Private", "Charles Schwab", "password")
+    item = "Charles Schwab"
+    username = await op_client.read(op.FINDATA_VAULT, item, "username")
+    password = await op_client.read(op.FINDATA_VAULT, item, "password")
     return Credentials(id=username, pwd=password)
 
 

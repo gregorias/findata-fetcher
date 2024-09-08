@@ -6,6 +6,8 @@ from email.header import decode_header
 from imaplib import IMAP4, IMAP4_SSL
 from typing import List, NamedTuple, Tuple
 
+from . import op
+
 
 class InboxProtocol(typing.Protocol):
     """A simplified email inbox protocol."""
@@ -28,13 +30,11 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-def fetch_credentials() -> Credentials:
+async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
     """Fetches Gmail credentials from my 1Password vault."""
-    from . import op
-    vault = "Automated Findata"
     item = "Gmail"
-    username = op.read(vault, item, "username")
-    app_password = op.read(vault, item, "credential")
+    username = await op_client.read(op.FINDATA_VAULT, item, "username")
+    app_password = await op_client.read(op.FINDATA_VAULT, item, "credential")
     return Credentials(id=username, pwd=app_password)
 
 

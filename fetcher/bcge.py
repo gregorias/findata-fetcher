@@ -17,13 +17,11 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-def fetch_credentials() -> Credentials:
-    """Fetches the credentials from my 1Password vault.
-
-    This function blocks until the credentials are fetched.
-    """
-    username = op.read('Private', 'bcge.ch', 'username')
-    password = op.read('Private', 'bcge.ch', 'password')
+async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
+    """Fetches the credentials from my 1Password vault."""
+    item = "bcge.ch"
+    username = await op_client.read(op.FINDATA_VAULT, item, "username")
+    password = await op_client.read(op.FINDATA_VAULT, item, "password")
     return Credentials(id=username, pwd=password)
 
 

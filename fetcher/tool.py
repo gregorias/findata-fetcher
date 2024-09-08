@@ -109,25 +109,32 @@ def read_config_from_context(ctx):
 def pull_bcge(ctx) -> None:
     """Fetches BCGE data and outputs a CSV file."""
     config = read_config_from_context(ctx)
-    credentials = bcge.fetch_credentials()
     download_directory = PurePath(config['download_directory'])
 
     async def run():
+        credentials = await bcge.fetch_credentials(await connect_op(config))
         async with playwrightutils.new_page(
                 Browser.CHROMIUM, downloads_path=download_directory) as p:
             statement = await bcge.fetch_account_statement(p, credentials)
-
         sys.stdout.buffer.write(statement)
 
     asyncio.run(run())
 
 
 @cli.command()
-def pull_bcgecc() -> None:
+@click.pass_context
+def pull_bcgecc(ctx) -> None:
     """Fetches BCGE CC data and outputs a PDF."""
-    with getFirefoxDriver() as driver:
-        sys.stdout.buffer.write(
-            bcgecc.fetch_data(bcgecc.fetch_credentials(), driver))
+    config = read_config_from_context(ctx)
+
+    async def run():
+        with getFirefoxDriver() as driver:
+            sys.stdout.buffer.write(
+                bcgecc.fetch_data(
+                    await bcgecc.fetch_credentials(await connect_op(config)),
+                    driver))
+
+    asyncio.run(run())
 
 
 @cli.command()
@@ -149,17 +156,15 @@ def coop_supercard_pull(ctx, headless: bool, verbose: bool) -> None:
     intervention is required.
     """
     config = ctx.obj['config']
-    op_service_account_auth_token = extract_op_service_account_auth_token_from_config_or_fail(
-        config)
     download_directory = Path(config['download_directory'])
     last_bc_path = Path(config['supercard_last_bc_file'])
     last_bc = coop_supercard.load_last_bc(last_bc_path)
     if verbose:
         print(f'Last pulled BC is {last_bc}.')
-    with op.set_service_account_auth_token(op_service_account_auth_token):
-        creds: coop_supercard.Credentials = coop_supercard.fetch_credentials()
 
-    async def run():
+    async def run() -> None:
+        creds: coop_supercard.Credentials = await coop_supercard.fetch_credentials(
+            await connect_op(config))
         async with async_playwright() as pw:
             # Use Chromium. In July 2024, Firefox stopped working: the login
             # page was loading indefinitely.
@@ -239,10 +244,13 @@ def degiro_portfolio_pull(ctx) -> None:
 
 
 async def degiro_pull(ctx, statement_type: degiro.StatementType) -> None:
-    creds = degiro.fetch_credentials()
+    creds = await degiro.fetch_credentials(await connect_op(ctx.obj['config']))
     async with playwrightutils.new_page(Browser.FIREFOX,
                                         headless=False) as page:
-        await degiro.login(page, creds)
+        await degiro.login(
+            page, creds,
+            extract_op_service_account_auth_token_from_config_or_fail(
+                ctx.obj['config']))
         statement = await degiro.fetch_statement(page, statement_type)
 
     sys.stdout.buffer.write(statement)
@@ -253,28 +261,31 @@ async def degiro_pull(ctx, statement_type: degiro.StatementType) -> None:
 def pull_easyride_receipts(ctx) -> None:
     """Fetches EasyRide receipt PDFs."""
     config = ctx.obj['config']
-    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
-        config)
-    with op.set_service_account_auth_token(op_service_account_token):
-        gmail_creds = gmail.fetch_credentials()
-    easyride.fetch_and_archive_receipts(
-        gmail_creds,
-        PurePath(config['download_directory']),
-    )
+
+    async def run():
+        easyride.fetch_and_archive_receipts(
+            await gmail.fetch_credentials(await connect_op(config)),
+            PurePath(config['download_directory']),
+        )
+
+    asyncio.run(run())
 
 
 @cli.command()
-def pull_finpension() -> None:
-    """Prints Finpension's portfolio total.
+@click.pass_context
+def pull_finpension(ctx) -> None:
+    """Prints Finpension’s portfolio total.
 
     It will print a line with the value like "12123.12\n"."""
-    creds = finpension.fetch_credentials()
+    config = ctx.obj['config']
 
     async def run():
         async with async_playwright() as pw:
             browser = await pw.firefox.launch(headless=False)
             page = await browser.new_page()
-            await finpension.login(page, creds)
+            await finpension.login(
+                page, await finpension.fetch_credentials(await
+                                                         connect_op(config)))
             value = await finpension.fetch_current_total(page)
             print(value)
 
@@ -295,7 +306,8 @@ def decode_ib_wire_instructions(csvf: typing.TextIO) -> dict[str, str]:
 
 
 @cli.command()
-def ib_cancel_pending_deposits() -> None:
+@click.pass_context
+def ib_cancel_pending_deposits(ctx) -> None:
     """Cancels all pending deposits.
 
     Outputs a CSV with wire instructions.
@@ -304,9 +316,10 @@ def ib_cancel_pending_deposits() -> None:
 
         ib-cancel-pending-deposits
     """
-    credentials = ib.fetch_credentials()
+    config = ctx.obj['config']
 
     async def run():
+        credentials = await ib.fetch_credentials(await connect_op(config))
         async with playwrightutils.new_page(Browser.FIREFOX,
                                             headless=False) as page:
             await ib.login(page, credentials)
@@ -316,15 +329,17 @@ def ib_cancel_pending_deposits() -> None:
 
 
 @cli.command()
-def ib_activity_pull() -> None:
+@click.pass_context
+def ib_activity_pull(ctx) -> None:
     """Pulls Interactive Brokers' activity statement.
 
     Outputs the statement CSV to stdout.
     """
-    credentials = ib.fetch_credentials()
+    config = ctx.obj['config']
     downloads_path = Path('/tmp')
 
     async def run():
+        credentials = await ib.fetch_credentials(await connect_op(config))
         async with playwrightutils.new_page(
                 Browser.FIREFOX, headless=False,
                 downloads_path=downloads_path) as page:
@@ -342,7 +357,8 @@ def ib_activity_pull() -> None:
               required=True,
               type=click.Choice(['CS', 'BCGE'], case_sensitive=False))
 @click.option('--amount', required=True)
-def ib_set_up_incoming_deposit(source, amount) -> None:
+@click.pass_context
+def ib_set_up_incoming_deposit(ctx, source, amount) -> None:
     """Sets up an incoming deposit on Interactive Brokers.
 
     Outputs a CSV with wire instructions.
@@ -351,11 +367,13 @@ def ib_set_up_incoming_deposit(source, amount) -> None:
 
         ib-set-up-incoming-deposit --source=cs --amount=21.37
     """
+    config = ctx.obj['config']
     ib_source: ib.DepositSource = (ib.DepositSource.BCGE if source == 'BCGE'
                                    else ib.DepositSource.CHARLES_SCHWAB)
-    credentials: ib.Credentials = ib.fetch_credentials()
 
     async def run() -> ib.SourceBankDepositInformation:
+        credentials: ib.Credentials = await ib.fetch_credentials(
+            await connect_op(config))
         async with playwrightutils.new_page(Browser.FIREFOX,
                                             headless=False) as page:
             await ib.login(page, credentials)
@@ -388,11 +406,17 @@ def ib_set_up_incoming_deposit(source, amount) -> None:
 
 
 @cli.command()
-def pull_mbank() -> None:
+@click.pass_context
+def pull_mbank(ctx) -> None:
     """Fetches mBank's data and outputs a CSV file."""
-    creds = mbank.fetch_credentials()
-    with getFirefoxDriver() as driver:
-        sys.stdout.buffer.write(mbank.fetch_mbank_data(driver, creds))
+    config = read_config_from_context(ctx)
+
+    async def run():
+        creds = await mbank.fetch_credentials(await connect_op(config))
+        with getFirefoxDriver() as driver:
+            sys.stdout.buffer.write(mbank.fetch_mbank_data(driver, creds))
+
+    asyncio.run(run())
 
 
 def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
@@ -430,12 +454,13 @@ def revolut_pull(ctx, download_directory) -> None:
 def pull_splitwise(ctx) -> None:
     """Fetches the Splitwise statement."""
     config = ctx.obj['config']
-    op_service_account_auth_token = extract_op_service_account_auth_token_from_config_or_fail(
-        config)
-    with op.set_service_account_auth_token(op_service_account_auth_token):
-        creds = splitwise.fetch_credentials()
+
+    async def run():
+        creds = await splitwise.fetch_credentials(await connect_op(config))
         csv = splitwise.export_balances_to_csv(splitwise.fetch_balances(creds))
-    sys.stdout.buffer.write(csv)
+        sys.stdout.buffer.write(csv)
+
+    asyncio.run(run())
 
 
 @cli.command()
@@ -444,15 +469,18 @@ def pull_galaxus(ctx) -> None:
     """Fetches Digitec-Galaxus receipts in text format."""
     config = ctx.obj['config']
     download_directory = PurePath(config['download_directory'])
-    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
-        config)
-    with op.set_service_account_auth_token(op_service_account_token):
-        gmail_creds = gmail.fetch_credentials()
-    with contextlib.closing(gmail.connect(gmail_creds)) as inbox:
-        for bill in galaxus.fetch_and_archive_bills(inbox):
-            with open(download_directory / (bill.subject + '.galaxus'),
-                      'w') as f:
-                f.write(bill.payload)
+
+    async def run():
+        with contextlib.closing(
+                gmail.connect(await
+                              gmail.fetch_credentials(await connect_op(config)
+                                                      ))) as inbox:
+            for bill in galaxus.fetch_and_archive_bills(inbox):
+                with open(download_directory / (bill.subject + '.galaxus'),
+                          'w') as f:
+                    f.write(bill.payload)
+
+    asyncio.run(run())
 
 
 @cli.command()
@@ -461,15 +489,18 @@ def pull_google_play_mail(ctx) -> None:
     """Fetches Google Play receipts in text format."""
     config = ctx.obj['config']
     download_directory = PurePath(config['download_directory'])
-    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
-        config)
-    with op.set_service_account_auth_token(op_service_account_token):
-        gmail_creds = gmail.fetch_credentials()
-    with contextlib.closing(gmail.connect(gmail_creds)) as inbox:
-        for bill in google_play_mail.fetch_and_archive_bills(inbox):
-            with open(download_directory / (bill.subject + '.email'),
-                      'w') as f:
-                f.write(bill.payload)
+
+    async def run():
+        with contextlib.closing(
+                gmail.connect(await
+                              gmail.fetch_credentials(await connect_op(config)
+                                                      ))) as inbox:
+            for bill in google_play_mail.fetch_and_archive_bills(inbox):
+                with open(download_directory / (bill.subject + '.email'),
+                          'w') as f:
+                    f.write(bill.payload)
+
+    asyncio.run(run())
 
 
 @cli.command()
@@ -477,14 +508,14 @@ def pull_google_play_mail(ctx) -> None:
 def pull_patreon(ctx) -> None:
     """Fetches Patreon receipts in text format."""
     config = ctx.obj['config']
-    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
-        config)
-    with op.set_service_account_auth_token(op_service_account_token):
-        gmail_creds = gmail.fetch_credentials()
-    patreon.fetch_and_archive_receipts(
-        gmail_creds,
-        PurePath(config['download_directory']),
-    )
+
+    async def run():
+        patreon.fetch_and_archive_receipts(
+            await gmail.fetch_credentials(await connect_op(config)),
+            PurePath(config['download_directory']),
+        )
+
+    asyncio.run(run())
 
 
 @cli.command()
@@ -492,15 +523,15 @@ def pull_patreon(ctx) -> None:
 def pull_uber_eats(ctx) -> None:
     """Fetches Uber Eats receipts in text format."""
     config = ctx.obj['config']
-    op_service_account_token = extract_op_service_account_auth_token_from_config_or_fail(
-        config)
-    with op.set_service_account_auth_token(op_service_account_token):
-        creds = gmail.fetch_credentials()
-
     download_dir = PurePath(config['download_directory'])
-    for (title, content) in ubereats.fetch_and_archive_bills(creds):
-        with open(download_dir / (title + '.ubereats'), 'w') as f:
-            f.write(content)
+
+    async def run():
+        for (title, content) in ubereats.fetch_and_archive_bills(
+                await gmail.fetch_credentials(await connect_op(config))):
+            with open(download_dir / (title + '.ubereats'), 'w') as f:
+                f.write(content)
+
+    asyncio.run(run())
 
 
 def extract_op_service_account_auth_token_from_config_or_fail(
@@ -509,6 +540,13 @@ def extract_op_service_account_auth_token_from_config_or_fail(
     if token is None:
         raise Exception('1password_service_account_token not found in config.')
     return token
+
+
+async def connect_op(config: dict) -> op.OpSdkClient:
+    op_service_account_auth_token = extract_op_service_account_auth_token_from_config_or_fail(
+        config)
+    return await op.OpSdkClient.connect(
+        service_account_auth_token=op_service_account_auth_token)
 
 
 def main():

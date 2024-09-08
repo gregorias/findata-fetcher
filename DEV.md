@@ -52,3 +52,13 @@ I need to use a browser automation technology, and I decided to use Playwright:
 > [!note]
 > I still use Selenium in some fetchers. It’s legacy code to be removed
 > whenever I have to change those fetchers.
+
+### Use 1Password SDK in favor of 1Password CLI
+
+This app has previously used 1Password CLI, `op`. It should now use [the
+SDK](https://developer.1password.com/docs/sdks/), because:
+
+1. A dedicated Python library is more reliable and simpler than calling an
+   external binary and parsing its output.
+2. The app is more self-contained: the SDK can be downloaded as a dependency
+   and I don’t need to separately install the CLI.

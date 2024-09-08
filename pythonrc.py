@@ -12,6 +12,7 @@ from playwright.async_api import async_playwright
 from selenium import webdriver
 
 import fetcher.tool as t
+from fetcher import op  # noqa: F401
 from fetcher.playwrightutils import (
     Browser,
     get_browser_type,
@@ -61,3 +62,6 @@ async def start_playwright(
     context = await browser.new_context(no_viewport=True)
     p = await context.new_page()
     return (pw, browser, context, p)
+
+
+op_client = ruc(op.OpSdkClient.connect(op_service_account_token))

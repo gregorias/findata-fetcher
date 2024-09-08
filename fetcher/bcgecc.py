@@ -4,15 +4,17 @@
 # data is "eventually consistent" so to say.
 """Fetches account data from Viseca"""
 import re
-import requests
 import time
 from typing import NamedTuple
+
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.ui import WebDriverWait
 
+from . import op
 from .driverutils import driver_cookie_jar_to_requests_cookies
 
 
@@ -21,11 +23,11 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-def fetch_credentials() -> Credentials:
+async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
     """Fetches credentials from my 1Password vault."""
-    from . import op
-    username = op.read("Private", "Viseca One", "username")
-    password = op.read("Private", "Viseca One", "password")
+    item = "Viseca One"
+    username = await op_client.read(op.FINDATA_VAULT, item, "username")
+    password = await op_client.read(op.FINDATA_VAULT, item, "password")
     return Credentials(id=username, pwd=password)
 
 

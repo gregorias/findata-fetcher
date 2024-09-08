@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlparse
 import playwright.async_api
 import requests
 
+from . import op
 from .fileutils import atomic_write
 
 
@@ -17,12 +18,11 @@ class Credentials(NamedTuple):
     pwd: str
 
 
-def fetch_credentials() -> Credentials:
+async def fetch_credentials(client: op.OpSdkClient) -> Credentials:
     """Fetches credentials from my 1Password vault."""
-    from . import op
-    vault = "Automated Findata"
-    username = op.read(vault, "supercard.ch", "username")
-    password = op.read(vault, "supercard.ch", "password")
+    item = "supercard.ch"
+    username = await client.read(op.FINDATA_VAULT, item, "username")
+    password = await client.read(op.FINDATA_VAULT, item, "password")
     return Credentials(id=username, pwd=password)
 
 

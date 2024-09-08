@@ -4,17 +4,19 @@ from typing import NamedTuple
 
 import playwright.async_api
 
+from . import op
+
 
 class Credentials(NamedTuple):
     phone_number: str
     password: str
 
 
-def fetch_credentials() -> Credentials:
+async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
     """Fetches credentials from my 1Password vault."""
-    from . import op
-    username = op.read("Private", "finpension.ch", "username")
-    password = op.read("Private", "finpension.ch", "password")
+    item = "finpension.ch"
+    username = await op_client.read(op.FINDATA_VAULT, item, "username")
+    password = await op_client.read(op.FINDATA_VAULT, item, "password")
     return Credentials(phone_number=username, password=password)
 
 
