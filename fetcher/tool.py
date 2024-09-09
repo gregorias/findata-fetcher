@@ -232,13 +232,11 @@ def degiro_portfolio_pull(ctx) -> None:
 
 
 async def degiro_pull(ctx, statement_type: degiro.StatementType) -> None:
-    creds = await degiro.fetch_credentials(await connect_op(ctx.obj['config']))
+    op_client = await connect_op(ctx.obj['config'])
+    creds = await degiro.fetch_credentials(op_client)
     async with playwrightutils.new_page(Browser.FIREFOX,
                                         headless=False) as page:
-        await degiro.login(
-            page, creds,
-            extract_op_service_account_auth_token_from_config_or_fail(
-                ctx.obj['config']))
+        await degiro.login(page, creds, op_client)
         statement = await degiro.fetch_statement(page, statement_type)
 
     sys.stdout.buffer.write(statement)

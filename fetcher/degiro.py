@@ -34,11 +34,14 @@ async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
     return Credentials(id=username, pwd=password)
 
 
-def fetch_totp(token: str) -> str:
+async def fetch_totp(op_client: op.OpSdkClient) -> str:
     """Fetches Degiro TOTP from my 1Password vault."""
-    from . import op
-    with op.set_service_account_auth_token(token):
-        return op.fetch_totp(op.FINDATA_VAULT, "degiro.nl")
+    vault_id = await op_client.get_vault_id(op.FINDATA_VAULT)
+    item_id = await op_client.get_item_id(vault_id, "degiro.nl")
+    try:
+        return await op_client.get_totp(vault_id, item_id)
+    except Exception as e:
+        raise Exception("Failed to fetch the Degiro TOTP.") from e
 
 
 async def dismiss_cookies_consent_dialog(page: Page,
@@ -47,7 +50,8 @@ async def dismiss_cookies_consent_dialog(page: Page,
         timeout=timeout / timedelta(milliseconds=1) if timeout else None)
 
 
-async def login(page: Page, creds: Credentials, op_token: str) -> None:
+async def login(page: Page, creds: Credentials,
+                op_client: op.OpSdkClient) -> None:
     """Logs in to Degiro."""
     logger.info("Logging in to Degiro.")
     await page.goto("https://trader.degiro.nl/login/chde/#/login")
@@ -66,7 +70,7 @@ async def login(page: Page, creds: Credentials, op_token: str) -> None:
     await password_input.press("Enter")
     logger.info("Entering TOTP.")
     totp_input = page.get_by_placeholder("012345")
-    await totp_input.fill(fetch_totp(op_token))
+    await totp_input.fill(await fetch_totp(op_client))
     await totp_input.press("Enter")
     await page.wait_for_url("https://trader.degiro.nl/trader/#/markets")
 

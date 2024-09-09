@@ -1,7 +1,6 @@
 """A wrapper for the 1Password CLI."""
 import contextlib
 import os
-import subprocess
 from typing import Iterator
 
 from onepassword.client import Client  # type: ignore
@@ -27,26 +26,6 @@ def set_service_account_auth_token(
         else:
             os.environ[
                 OP_SERVICE_ACCOUNT_TOKEN] = previous_op_service_account_token
-
-
-class OpError(Exception):
-    """An error from the 1Password CLI."""
-
-    def __init__(self, message: str):
-        super().__init__(message)
-
-
-# Can’t use the SDK, because there’s [a bug](https://github.com/1Password/onepassword-sdk-python/issues/108).
-def fetch_totp(vault: str, item: str) -> str:
-    """Fetches a TOTP of an item in a vault."""
-    op_read = subprocess.run(
-        ["op", "item", "get", "--otp", f"--vault={vault}", item],
-        capture_output=True,
-        text=True)
-    if op_read.returncode != 0:
-        raise OpError(
-            f"Could not read TOTP. 1Password outputted: f{op_read.stderr}")
-    return op_read.stdout
 
 
 class OpSdkClient():
@@ -79,3 +58,21 @@ class OpSdkClient():
             if item.title == item_name:
                 return item.id
         return None
+
+    async def get_totp(self, vault_id, item_id) -> str:
+        """Fetches the TOTP of an item in a vault.
+
+        Raises:
+            Exception: If the TOTP could not be fetched.
+        """
+        item = await self._op_sdk_client.items.get(vault_id, item_id)
+        for f in item.fields:
+            if f.field_type == "Totp":
+                if f.details.content.error_message is not None:
+                    raise Exception(
+                        f'Could not fetch Totp: {f.details.content.error_message}.'
+                    )
+                else:
+                    return f.details.content.code
+        raise Exception(
+            "Could not find the TOTP field for the 1Password item.")
