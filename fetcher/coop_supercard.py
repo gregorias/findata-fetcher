@@ -9,8 +9,14 @@ from urllib.parse import parse_qs, urlparse
 import playwright.async_api
 import requests
 
-from . import op
+from . import op, playwrightutils
 from .fileutils import atomic_write
+
+__all__ = [
+    'Credentials',
+    'fetch_credentials',
+    'fetch_and_save_receipts',
+]
 
 
 class Credentials(NamedTuple):
@@ -24,6 +30,32 @@ async def fetch_credentials(client: op.OpSdkClient) -> Credentials:
     username = await client.read(op.FINDATA_VAULT, item, "username")
     password = await client.read(op.FINDATA_VAULT, item, "password")
     return Credentials(id=username, pwd=password)
+
+
+async def fetch_and_save_receipts(
+    last_bc_path: pathlib.Path,
+    download_directory: pathlib.Path,
+    creds: Credentials,
+    page: playwright.async_api.Page,
+    browser_context: playwright.async_api.BrowserContext,
+    log: Callable[[str], None],
+):
+    """Fetches and saves Coop receipts from supercard.ch."""
+    last_bc = load_last_bc(last_bc_path)
+    log(f'Last pulled BC is {last_bc}.')
+    reverse_chronological_receipt_urls = await fetch_receipt_urls(page, creds)
+    # Wait 5 seconds to make sure that all background scripts have done
+    # their work.
+    await asyncio.sleep(5)
+    cookies = playwrightutils.playwright_cookie_jar_to_requests_cookies(
+        await browser_context.cookies())
+    chronological_unprocessed_receipt_urls = get_chronological_unprocessed_urls(
+        reverse_chronological_receipt_urls, last_bc)
+    for coop_receipt in fetch_receipts(
+            chronological_unprocessed_receipt_urls,
+            lambda url: fetch_receipt(url, cookies)):
+        log(f'Saving a receipt with BC={coop_receipt.bc}.')
+        save_receipt(download_directory, last_bc_path, receipt=coop_receipt)
 
 
 async def login(page: playwright.async_api.Page, creds: Credentials) -> None:

@@ -141,11 +141,13 @@ async def intercept_download(
 
 
 @contextlib.asynccontextmanager
-async def new_page(
+async def new_stack(
     browser_type: Browser,
     headless: bool = False,
     downloads_path: Optional[pathlib.Path] = None
-) -> typing.AsyncIterator[playwright.async_api.Page]:
+) -> typing.AsyncIterator[
+        tuple[playwright.async_api.Playwright, playwright.async_api.Browser,
+              playwright.async_api.BrowserContext, playwright.async_api.Page]]:
     """Opens a new page in a new context.
 
     :param browser playwright.async_api.BrowserType: The browser to use.
@@ -161,4 +163,22 @@ async def new_page(
                 async_closing(await
                               browser.new_context(no_viewport=not headless)) as
                 context, async_closing(await context.new_page()) as page):
+        yield (pw, browser, context, page)
+
+
+@contextlib.asynccontextmanager
+async def new_page(
+    browser_type: Browser,
+    headless: bool = False,
+    downloads_path: Optional[pathlib.Path] = None
+) -> typing.AsyncIterator[playwright.async_api.Page]:
+    """Opens a new page in a new context.
+
+    :param browser playwright.async_api.BrowserType: The browser to use.
+    :param headless bool: Whether to run a fixed-viewport headless browser or a
+    :param downloads_path Optional[pathlib.Path]: The path used for downloads.
+    responsive one. Defaults to False.
+    """
+    async with new_stack(browser_type, headless,
+                         downloads_path) as (_, _, _, page):
         yield page

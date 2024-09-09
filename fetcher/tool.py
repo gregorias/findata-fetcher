@@ -150,7 +150,10 @@ def pull_bcgecc(ctx) -> None:
 def coop_supercard_pull(ctx, headless: bool, verbose: bool) -> None:
     """Fetches Coop receipt PDFs from supercard.ch.
 
-    This command saves the PDFs in the download directory.
+    This command:
+
+    * Saves the PDFs in the download directory as "Coop BC.pdf".\n
+    * Writes the last receipts’ BC (an identifier) to the last BC file.
 
     supercard.ch occasionally asks for a captcha. When this happens, human
     intervention is required.
@@ -158,38 +161,23 @@ def coop_supercard_pull(ctx, headless: bool, verbose: bool) -> None:
     config = ctx.obj['config']
     download_directory = Path(config['download_directory'])
     last_bc_path = Path(config['supercard_last_bc_file'])
-    last_bc = coop_supercard.load_last_bc(last_bc_path)
-    if verbose:
-        print(f'Last pulled BC is {last_bc}.')
+
+    def print_if_verbose(msg):
+        return print(msg) if verbose else lambda _: None
 
     async def run() -> None:
-        creds: coop_supercard.Credentials = await coop_supercard.fetch_credentials(
-            await connect_op(config))
-        async with async_playwright() as pw:
-            # Use Chromium. In July 2024, Firefox stopped working: the login
-            # page was loading indefinitely.
-            browser = await pw.chromium.launch(headless=headless)
-            context = await browser.new_context(no_viewport=not headless)
-            page = await context.new_page()
-            reverse_chronological_receipt_urls = await coop_supercard.fetch_receipt_urls(
-                page, creds)
-            # Wait 5 seconds to make sure that all background scripts have done their work.
-            await asyncio.sleep(5)
-            cookies = playwrightutils.playwright_cookie_jar_to_requests_cookies(
-                await context.cookies())
-            chronological_unprocessed_receipt_urls = coop_supercard.get_chronological_unprocessed_urls(
-                reverse_chronological_receipt_urls, last_bc)
-            for coop_receipt in coop_supercard.fetch_receipts(
-                    chronological_unprocessed_receipt_urls,
-                    lambda url: coop_supercard.fetch_receipt(url, cookies)):
-                if verbose:
-                    print(f'Saving a receipt with BC={coop_receipt.bc}.')
-                coop_supercard.save_receipt(download_directory,
-                                            last_bc_path,
-                                            receipt=coop_receipt)
-            await page.close()
-            await context.close()
-            await browser.close()
+        creds: coop_supercard.Credentials = (await
+                                             coop_supercard.fetch_credentials(
+                                                 await connect_op(config)))
+        # Use Chromium. In July 2024, Firefox stopped working: the login
+        # page was loading indefinitely.
+        async with playwrightutils.new_stack(
+            browser_type=Browser.CHROMIUM,
+            headless=headless) as (pw, browser, browser_context, page):
+
+            await coop_supercard.fetch_and_save_receipts(
+                last_bc_path, download_directory, creds, page, browser_context,
+                print_if_verbose)
 
     asyncio.run(run())
 
