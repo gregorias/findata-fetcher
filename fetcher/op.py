@@ -1,31 +1,9 @@
 """A wrapper for the 1Password CLI."""
-import contextlib
-import os
-from typing import Iterator
-
 from onepassword.client import Client  # type: ignore
 
 # The vault where the 1Password items accessible by the findata service account
 # are stored.
 FINDATA_VAULT = "Automated Findata"
-
-
-@contextlib.contextmanager
-def set_service_account_auth_token(
-        service_account_auth_token: str) -> Iterator[None]:
-    """Sets the service account auth token for the duration of the context."""
-    OP_SERVICE_ACCOUNT_TOKEN = 'OP_SERVICE_ACCOUNT_TOKEN'
-    previous_op_service_account_token = os.environ.get(
-        OP_SERVICE_ACCOUNT_TOKEN)
-    try:
-        os.environ[OP_SERVICE_ACCOUNT_TOKEN] = service_account_auth_token
-        yield None
-    finally:
-        if previous_op_service_account_token is None:
-            del os.environ[OP_SERVICE_ACCOUNT_TOKEN]
-        else:
-            os.environ[
-                OP_SERVICE_ACCOUNT_TOKEN] = previous_op_service_account_token
 
 
 class OpSdkClient():
