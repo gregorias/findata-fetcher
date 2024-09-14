@@ -1,5 +1,4 @@
 {
   "logging_file": "ledupt.log",
   "download_directory": "/home/user/Downloads",
-  "1password_service_account_token": "foo"
 }

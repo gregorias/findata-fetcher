@@ -1,9 +1,37 @@
 """A wrapper for the 1Password CLI."""
+import subprocess
+
 from onepassword.client import Client  # type: ignore
 
 # The vault where the 1Password items accessible by the findata service account
 # are stored.
 FINDATA_VAULT = "Automated Findata"
+
+
+def fetch_service_account_auth_token() -> str:
+    """Fetches the 1Password service account auth token for Findata.
+
+    This function uses the `op` command line tool.
+
+    Returns:
+        The 1Password service account auth token.
+
+    Raises:
+        Exception: If the 1Password service account auth token could not be
+            fetched.
+    """
+    # op item get --vault="Automated Findata" "Service Account Auth Token Findata" --reveal --fields label="credential"
+    op_read = subprocess.run([
+        "op", "item", "get", "--vault", FINDATA_VAULT,
+        "Service Account Auth Token Findata", "--reveal", "--fields",
+        "label=credential"
+    ],
+                             capture_output=True,
+                             text=True)
+    if op_read.returncode != 0:
+        raise Exception(
+            "Could not fetch the 1Password service account auth token.")
+    return op_read.stdout.strip()
 
 
 class OpSdkClient():

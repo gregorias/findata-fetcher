@@ -23,8 +23,6 @@ D = decimal.Decimal
 with open(t.FETCHER_CONFIG_DEFAULT, 'r') as cf:
     config = json.load(cf)
     revolut_account_numbers = config['revolut_account_numbers']
-    op_service_account_token = t.extract_op_service_account_auth_token_from_config_or_fail(
-        config)
 
 
 def start_driver():
@@ -64,4 +62,4 @@ async def start_playwright(
     return (pw, browser, context, p)
 
 
-op_client = ruc(op.OpSdkClient.connect(op_service_account_token))
+op_client = ruc(op.OpSdkClient.connect(op.fetch_service_account_auth_token()))

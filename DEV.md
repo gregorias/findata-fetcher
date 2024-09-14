@@ -62,3 +62,18 @@ SDK](https://developer.1password.com/docs/sdks/), because:
    external binary and parsing its output.
 2. The app is more self-contained: the SDK can be downloaded as a dependency
    and I don’t need to separately install the CLI.
+
+### No saving 1Password’s token in the config
+
+This app has previously used a 1Password service account token saved in the
+config file. I decided against that. The app has to never use the token in such
+a way or a similar one in which it can be intercepted by other apps, e.g.,
+
+- No saving to a file on a disk.
+- No saving the secret to environment variables (subprocesses can see it then).
+
+This is a security measure to limit the attack surface.
+
+Fetcher can either fetch the token through 1Password directly or ask the caller
+to provide it at runtime (e.g., through a prompt). Delegate secret management
+up the stack.

@@ -112,7 +112,7 @@ def pull_bcge(ctx) -> None:
     download_directory = PurePath(config['download_directory'])
 
     async def run():
-        credentials = await bcge.fetch_credentials(await connect_op(config))
+        credentials = await bcge.fetch_credentials(await connect_op())
         async with playwrightutils.new_page(
                 Browser.CHROMIUM, downloads_path=download_directory) as p:
             statement = await bcge.fetch_account_statement(p, credentials)
@@ -122,16 +122,14 @@ def pull_bcge(ctx) -> None:
 
 
 @cli.command()
-@click.pass_context
-def pull_bcgecc(ctx) -> None:
+def pull_bcgecc() -> None:
     """Fetches BCGE CC data and outputs a PDF."""
-    config = read_config_from_context(ctx)
 
     async def run():
         with getFirefoxDriver() as driver:
             sys.stdout.buffer.write(
                 bcgecc.fetch_data(
-                    await bcgecc.fetch_credentials(await connect_op(config)),
+                    await bcgecc.fetch_credentials(await connect_op()),
                     driver))
 
     asyncio.run(run())
@@ -168,7 +166,7 @@ def coop_supercard_pull(ctx, headless: bool, verbose: bool) -> None:
     async def run() -> None:
         creds: coop_supercard.Credentials = (await
                                              coop_supercard.fetch_credentials(
-                                                 await connect_op(config)))
+                                                 await connect_op()))
         # Use Chromium. In July 2024, Firefox stopped working: the login
         # page was loading indefinitely.
         async with playwrightutils.new_stack(
@@ -218,21 +216,19 @@ def pull_cs_eac_history() -> None:
 
 
 @cli.command()
-@click.pass_context
-def degiro_account_pull(ctx) -> None:
+def degiro_account_pull() -> None:
     """Fetches Degiro's account statement and outputs a CSV file."""
-    asyncio.run(degiro_pull(ctx, degiro.StatementType.ACCOUNT))
+    asyncio.run(degiro_pull(degiro.StatementType.ACCOUNT))
 
 
 @cli.command()
-@click.pass_context
-def degiro_portfolio_pull(ctx) -> None:
+def degiro_portfolio_pull() -> None:
     """Fetches Degiro's portfolio statement and outputs a CSV file."""
-    asyncio.run(degiro_pull(ctx, degiro.StatementType.PORTFOLIO))
+    asyncio.run(degiro_pull(degiro.StatementType.PORTFOLIO))
 
 
-async def degiro_pull(ctx, statement_type: degiro.StatementType) -> None:
-    op_client = await connect_op(ctx.obj['config'])
+async def degiro_pull(statement_type: degiro.StatementType) -> None:
+    op_client = await connect_op()
     creds = await degiro.fetch_credentials(op_client)
     async with playwrightutils.new_page(Browser.FIREFOX,
                                         headless=False) as page:
@@ -250,7 +246,7 @@ def pull_easyride_receipts(ctx) -> None:
 
     async def run():
         easyride.fetch_and_archive_receipts(
-            await gmail.fetch_credentials(await connect_op(config)),
+            await gmail.fetch_credentials(await connect_op()),
             PurePath(config['download_directory']),
         )
 
@@ -258,20 +254,17 @@ def pull_easyride_receipts(ctx) -> None:
 
 
 @cli.command()
-@click.pass_context
 def pull_finpension(ctx) -> None:
     """Prints Finpension’s portfolio total.
 
     It will print a line with the value like "12123.12\n"."""
-    config = ctx.obj['config']
 
     async def run():
         async with async_playwright() as pw:
             browser = await pw.firefox.launch(headless=False)
             page = await browser.new_page()
             await finpension.login(
-                page, await finpension.fetch_credentials(await
-                                                         connect_op(config)))
+                page, await finpension.fetch_credentials(await connect_op()))
             value = await finpension.fetch_current_total(page)
             print(value)
 
@@ -292,8 +285,7 @@ def decode_ib_wire_instructions(csvf: typing.TextIO) -> dict[str, str]:
 
 
 @cli.command()
-@click.pass_context
-def ib_cancel_pending_deposits(ctx) -> None:
+def ib_cancel_pending_deposits() -> None:
     """Cancels all pending deposits.
 
     Outputs a CSV with wire instructions.
@@ -302,10 +294,9 @@ def ib_cancel_pending_deposits(ctx) -> None:
 
         ib-cancel-pending-deposits
     """
-    config = ctx.obj['config']
 
     async def run():
-        credentials = await ib.fetch_credentials(await connect_op(config))
+        credentials = await ib.fetch_credentials(await connect_op())
         async with playwrightutils.new_page(Browser.FIREFOX,
                                             headless=False) as page:
             await ib.login(page, credentials)
@@ -315,17 +306,15 @@ def ib_cancel_pending_deposits(ctx) -> None:
 
 
 @cli.command()
-@click.pass_context
-def ib_activity_pull(ctx) -> None:
+def ib_activity_pull() -> None:
     """Pulls Interactive Brokers' activity statement.
 
     Outputs the statement CSV to stdout.
     """
-    config = ctx.obj['config']
     downloads_path = Path('/tmp')
 
     async def run():
-        credentials = await ib.fetch_credentials(await connect_op(config))
+        credentials = await ib.fetch_credentials(await connect_op())
         async with playwrightutils.new_page(
                 Browser.FIREFOX, headless=False,
                 downloads_path=downloads_path) as page:
@@ -343,8 +332,7 @@ def ib_activity_pull(ctx) -> None:
               required=True,
               type=click.Choice(['CS', 'BCGE'], case_sensitive=False))
 @click.option('--amount', required=True)
-@click.pass_context
-def ib_set_up_incoming_deposit(ctx, source, amount) -> None:
+def ib_set_up_incoming_deposit(source, amount) -> None:
     """Sets up an incoming deposit on Interactive Brokers.
 
     Outputs a CSV with wire instructions.
@@ -353,13 +341,12 @@ def ib_set_up_incoming_deposit(ctx, source, amount) -> None:
 
         ib-set-up-incoming-deposit --source=cs --amount=21.37
     """
-    config = ctx.obj['config']
     ib_source: ib.DepositSource = (ib.DepositSource.BCGE if source == 'BCGE'
                                    else ib.DepositSource.CHARLES_SCHWAB)
 
     async def run() -> ib.SourceBankDepositInformation:
-        credentials: ib.Credentials = await ib.fetch_credentials(
-            await connect_op(config))
+        credentials: ib.Credentials = await ib.fetch_credentials(await
+                                                                 connect_op())
         async with playwrightutils.new_page(Browser.FIREFOX,
                                             headless=False) as page:
             await ib.login(page, credentials)
@@ -392,13 +379,11 @@ def ib_set_up_incoming_deposit(ctx, source, amount) -> None:
 
 
 @cli.command()
-@click.pass_context
-def pull_mbank(ctx) -> None:
+def pull_mbank() -> None:
     """Fetches mBank's data and outputs a CSV file."""
-    config = read_config_from_context(ctx)
 
     async def run():
-        creds = await mbank.fetch_credentials(await connect_op(config))
+        creds = await mbank.fetch_credentials(await connect_op())
         with getFirefoxDriver() as driver:
             sys.stdout.buffer.write(mbank.fetch_mbank_data(driver, creds))
 
@@ -436,13 +421,11 @@ def revolut_pull(ctx, download_directory) -> None:
 
 
 @cli.command()
-@click.pass_context
-def pull_splitwise(ctx) -> None:
+def pull_splitwise() -> None:
     """Fetches the Splitwise statement."""
-    config = ctx.obj['config']
 
     async def run():
-        creds = await splitwise.fetch_credentials(await connect_op(config))
+        creds = await splitwise.fetch_credentials(await connect_op())
         csv = splitwise.export_balances_to_csv(splitwise.fetch_balances(creds))
         sys.stdout.buffer.write(csv)
 
@@ -459,8 +442,8 @@ def pull_galaxus(ctx) -> None:
     async def run():
         with contextlib.closing(
                 gmail.connect(await
-                              gmail.fetch_credentials(await connect_op(config)
-                                                      ))) as inbox:
+                              gmail.fetch_credentials(await
+                                                      connect_op()))) as inbox:
             for bill in galaxus.fetch_and_archive_bills(inbox):
                 with open(download_directory / (bill.subject + '.galaxus'),
                           'w') as f:
@@ -479,8 +462,8 @@ def pull_google_play_mail(ctx) -> None:
     async def run():
         with contextlib.closing(
                 gmail.connect(await
-                              gmail.fetch_credentials(await connect_op(config)
-                                                      ))) as inbox:
+                              gmail.fetch_credentials(await
+                                                      connect_op()))) as inbox:
             for bill in google_play_mail.fetch_and_archive_bills(inbox):
                 with open(download_directory / (bill.subject + '.email'),
                           'w') as f:
@@ -497,7 +480,7 @@ def pull_patreon(ctx) -> None:
 
     async def run():
         patreon.fetch_and_archive_receipts(
-            await gmail.fetch_credentials(await connect_op(config)),
+            await gmail.fetch_credentials(await connect_op()),
             PurePath(config['download_directory']),
         )
 
@@ -513,24 +496,15 @@ def pull_uber_eats(ctx) -> None:
 
     async def run():
         for (title, content) in ubereats.fetch_and_archive_bills(
-                await gmail.fetch_credentials(await connect_op(config))):
+                await gmail.fetch_credentials(await connect_op())):
             with open(download_dir / (title + '.ubereats'), 'w') as f:
                 f.write(content)
 
     asyncio.run(run())
 
 
-def extract_op_service_account_auth_token_from_config_or_fail(
-        config: dict) -> str:
-    token = config.get('1password_service_account_token')
-    if token is None:
-        raise Exception('1password_service_account_token not found in config.')
-    return token
-
-
-async def connect_op(config: dict) -> op.OpSdkClient:
-    op_service_account_auth_token = extract_op_service_account_auth_token_from_config_or_fail(
-        config)
+async def connect_op() -> op.OpSdkClient:
+    op_service_account_auth_token = op.fetch_service_account_auth_token()
     return await op.OpSdkClient.connect(
         service_account_auth_token=op_service_account_auth_token)
 
