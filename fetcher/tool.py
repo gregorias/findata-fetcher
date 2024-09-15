@@ -136,48 +136,16 @@ def pull_bcgecc() -> None:
 
 
 @cli.command()
-@click.pass_context
-@click.option('--headless/--no-headless',
-              default=True,
-              show_default=True,
-              help='Run this command in a headless browser.')
-@click.option('--verbose/--quiet',
-              default=False,
-              show_default=True,
-              help='Turn on verbose mode.')
-def coop_supercard_pull(ctx, headless: bool, verbose: bool) -> None:
-    """Fetches Coop receipt PDFs from supercard.ch.
+def coop_supercard_pull() -> None:
+    """Fetches Coop receipt PDFs from coop.ch.
 
-    This command:
+    This command saves `receipt *.pdf` files to the download directory.
 
-    * Saves the PDFs in the download directory as "Coop BC.pdf".\n
-    * Writes the last receipts’ BC (an identifier) to the last BC file.
-
-    supercard.ch occasionally asks for a captcha. When this happens, human
-    intervention is required.
+    This command just opens the Coop page in the default browser.
+    Coop starter blocking Playwright (and presumably other automation) in late
+    2024.
     """
-    config = ctx.obj['config']
-    download_directory = Path(config['download_directory'])
-    last_bc_path = Path(config['supercard_last_bc_file'])
-
-    def print_if_verbose(msg):
-        return print(msg) if verbose else lambda _: None
-
-    async def run() -> None:
-        creds: coop_supercard.Credentials = (await
-                                             coop_supercard.fetch_credentials(
-                                                 await connect_op()))
-        # Use Chromium. In July 2024, Firefox stopped working: the login
-        # page was loading indefinitely.
-        async with playwrightutils.new_stack(
-            browser_type=Browser.CHROMIUM,
-            headless=headless) as (pw, browser, browser_context, page):
-
-            await coop_supercard.fetch_and_save_receipts(
-                last_bc_path, download_directory, creds, page, browser_context,
-                print_if_verbose)
-
-    asyncio.run(run())
+    coop_supercard.fetch_receipts_manually()
 
 
 @cli.command()
