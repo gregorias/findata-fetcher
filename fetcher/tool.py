@@ -222,7 +222,7 @@ def pull_easyride_receipts(ctx) -> None:
 
 
 @cli.command()
-def pull_finpension(ctx) -> None:
+def pull_finpension() -> None:
     """Prints Finpension’s portfolio total.
 
     It will print a line with the value like "12123.12\n"."""
