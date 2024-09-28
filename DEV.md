@@ -77,3 +77,11 @@ This is a security measure to limit the attack surface.
 Fetcher can either fetch the token through 1Password directly or ask the caller
 to provide it at runtime (e.g., through a prompt). Delegate secret management
 up the stack.
+
+### Save all secrets in 1Password
+
+I keep all secrets in 1Password for the similar reasons as above: namely, to
+limit the attack surface and secret-management complexity.
+
+The secrets are even things like an OAuth token
+[fetched by schwab-py](https://schwab-py.readthedocs.io/en/latest/auth.html#oauth-refresher).
