@@ -62,4 +62,5 @@ async def start_playwright(
     return (pw, browser, context, p)
 
 
-op_client = ruc(op.OpSdkClient.connect(op.fetch_service_account_auth_token()))
+async def open_1password_client() -> op.OpSdkClient:
+    return await op.OpSdkClient.connect(op.fetch_service_account_auth_token())
