@@ -164,26 +164,6 @@ def cs_send_wire_to_ib(ctx, amount: str,
 
 
 @cli.command()
-def pull_cs_account_history() -> None:
-    """Fetches Charles Schwab's transaction history.
-
-    Prints the CSV file to STDOUT.
-    """
-    # Stopped working in July 2024, the login page was blocking me.
-    raise NotImplementedError()
-
-
-@cli.command()
-def pull_cs_eac_history() -> None:
-    """Fetches Charles Schwab EAC's transaction history.
-
-    Prints the CSV file to STDOUT.
-    """
-    # Stopped working in July 2024, the login page was blocking me.
-    raise NotImplementedError()
-
-
-@cli.command()
 def degiro_account_pull() -> None:
     """Fetches Degiro's account statement and outputs a CSV file."""
     asyncio.run(degiro_pull(degiro.StatementType.ACCOUNT))

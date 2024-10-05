@@ -12,7 +12,6 @@ Currently implemented fetchers are:
 
 * BCGE's account statement
 * (BCGE CC) Viseca's latest credit card bill
-* Charles Schwab's account history
 * Coop receipt PDF from gmail
 * Degiro's portfolio and account statements
 * Finpension's transaction report (through gmail)

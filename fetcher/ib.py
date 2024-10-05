@@ -42,8 +42,7 @@ async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
 async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
     """Logs into Interactive Brokers.
 
-    Returns once the authentication process finishes. The page will contain
-    Charles Schwab's dashboard.
+    Returns once the authentication process finishes.
 
     :param page playwright.async_api.Page: A blank page.
     :param creds Credentials
