@@ -1,5 +1,5 @@
 [project]
-requires-python = ">=3.11.3"
+requires-python = ">=3.13.1"
 
 [tool.poetry]
 name = "findata-fetcher"
@@ -22,14 +22,14 @@ findata-fetcher = "fetcher.tool:main"
 Repository = "https://github.com/gregorias/findata-fetcher"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.13"
 beautifulsoup4 = "^4.12.3"
 # Not 8.1.4 or 8.1.5, because https://github.com/pallets/click/issues/2558
 click = "^8.1.7,!=8.1.4,!=8.1.5"
 CurrencyConverter = "^0.17"
 # Use 0.1.1 until https://github.com/1Password/onepassword-sdk-python/issues/108 is resolved.
 onepassword = { git = "https://github.com/1Password/onepassword-sdk-python.git", tag = 'v0.1.1' }
-playwright = "^1.46.0"
+playwright = "^1.49.0"
 # Needs to be at least 2.31: https://github.com/gregorias/findata-fetcher/pull/4.
 requests = "^2.32.3"
 selenium = "^4.14.0"
