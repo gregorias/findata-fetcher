@@ -8,10 +8,10 @@ pre-commit:
       files: git diff --name-only --cached --diff-filter=AM
       glob: "*.md"
       run: markdownlint {files}
-    poetry-check:
+    pyproject-toml-check:
       tags: lint
       glob: "pyproject.toml"
-      run: poetry check
+      run: validate-pyproject < pyproject.toml
     ruff:
       tags: lint
       glob: "*.py"
@@ -46,5 +46,5 @@ commit-msg:
       run: "commitlint --edit={1}"
 post-checkout:
   commands:
-    poetry-install:
-      run: poetry install
+    uv-sync:
+      run: uv sync --locked

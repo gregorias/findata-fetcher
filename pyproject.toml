@@ -1,49 +1,59 @@
 [project]
-requires-python = ">=3.13.1"
-
-[tool.poetry]
 name = "findata-fetcher"
 version = "11.0.0"
-authors = ["Grzegorz Milka <grzegorzmilka@gmail.com>"]
 description = "A tool that downloads financial statements from various sites."
+authors = [{ name = "Grzegorz Milka", email = "grzegorzmilka@gmail.com" }]
+requires-python = ">=3.13.1"
+readme = "README.md"
+license = { "text" = "AGPL-3.0" }
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
   "Operating System :: OS Independent",
 ]
-license = "AGPLv3"
-readme = "README.md"
-packages = [{ include = "fetcher" }]
+dependencies = [
+  "beautifulsoup4>=4.12.3,<5",
+  # Not 8.1.4 or 8.1.5, because https://github.com/pallets/click/issues/2558
+  "click>=8.1.8,<9",
+  "CurrencyConverter>=0.17,<0.18",
+  "onepassword",
+  "playwright>=1.49.0,<2",
+  # Needs to be at least 2.31: https://github.com/gregorias/findata-fetcher/pull/4.
+  "requests>=2.32.3,<3",
+  "selenium>=4.14.0,<5",
+  "setuptools>=70,<71",
+  "splitwise>=3.0.0,<4",
+]
 
-[tool.poetry.scripts]
-findata-fetcher = "fetcher.tool:main"
-
-[tool.poetry.urls]
+[project.urls]
 Repository = "https://github.com/gregorias/findata-fetcher"
 
-[tool.poetry.dependencies]
-python = "^3.13"
-beautifulsoup4 = "^4.12.3"
-# Not 8.1.4 or 8.1.5, because https://github.com/pallets/click/issues/2558
-click = "^8.1.7,!=8.1.4,!=8.1.5"
-CurrencyConverter = "^0.17"
-# Use 0.1.1 until https://github.com/1Password/onepassword-sdk-python/issues/108 is resolved.
-onepassword = { git = "https://github.com/1Password/onepassword-sdk-python.git", tag = 'v0.1.1' }
-playwright = "^1.49.0"
-# Needs to be at least 2.31: https://github.com/gregorias/findata-fetcher/pull/4.
-requests = "^2.32.3"
-selenium = "^4.14.0"
-setuptools = "^70"
-splitwise = "^3.0.0"
+[project.scripts]
+findata-fetcher = "fetcher.tool:main"
 
-[tool.poetry.group.dev.dependencies]
-types-beautifulsoup4 = "^4.12"
-types-requests = "^2.32"
-autopep8 = "*"
-mypy = "^1.11"
-packaging = "*"
-rope = "*"
+[dependency-groups]
+dev = [
+  "types-beautifulsoup4~=4.12",
+  "types-requests~=2.32",
+  "autopep8",
+  "mypy~=1.11",
+  "packaging",
+  "rope",
+  "validate-pyproject>=0.24.1",
+]
+
+[tool.uv]
+
+[tool.uv.sources]
+# Use 0.1.1 until https://github.com/1Password/onepassword-sdk-python/issues/108 is resolved.
+onepassword = { git = "https://github.com/1Password/onepassword-sdk-python.git", tag = "v0.1.1" }
+
+[tool.hatch.build.targets.sdist]
+include = ["fetcher"]
+
+[tool.hatch.build.targets.wheel]
+include = ["fetcher"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

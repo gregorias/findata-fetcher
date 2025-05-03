@@ -2,7 +2,7 @@
 #
 # This script releases a new version of the project.
 
-set OLD_VERSION (poetry version | cut -d' ' -f2)
+set OLD_VERSION (uv version | cut -d' ' -f2)
 or begin
   echo "Could not get the current version. Aborting."
   exit 0
@@ -16,7 +16,7 @@ switch $confirm
         echo "Aborting due to lack of confirmation (user input was $confirm)."
         exit 0
 end
-set NEW_VERSION (poetry version | cut -d' ' -f2)
+set NEW_VERSION (uv version | cut -d' ' -f2)
 and echo "New version: $NEW_VERSION."
 git add pyproject.toml
 and echo "Committing the new version."
