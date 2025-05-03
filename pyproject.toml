@@ -16,7 +16,7 @@ dependencies = [
   # Not 8.1.4 or 8.1.5, because https://github.com/pallets/click/issues/2558
   "click>=8.1.8,<9",
   "CurrencyConverter>=0.17,<0.18",
-  "onepassword",
+  "onepassword-sdk==0.1.7",
   "playwright>=1.49.0,<2",
   # Needs to be at least 2.31: https://github.com/gregorias/findata-fetcher/pull/4.
   "requests>=2.32.3,<3",
@@ -43,10 +43,6 @@ dev = [
 ]
 
 [tool.uv]
-
-[tool.uv.sources]
-# Use 0.1.1 until https://github.com/1Password/onepassword-sdk-python/issues/108 is resolved.
-onepassword = { git = "https://github.com/1Password/onepassword-sdk-python.git", tag = "v0.1.1" }
 
 [tool.hatch.build.targets.sdist]
 include = ["fetcher"]

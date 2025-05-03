@@ -1,16 +1,24 @@
 # A dev pythonrc module.
 # I use this module for interactive debugging. It is automatically loaded
 # in my (b)python setup and provides convenient bindings.
+#
+# Example session:
+#
+# >>> pw, b, bc, p = ruc(start_playwright())
+# >>> import fetcher.revolut as r
+# >>> ruc(r.login(p))
 import asyncio
 import atexit
 import decimal
 import json
 import pathlib
+import re  # noqa: F401
 
 import playwright
 from playwright.async_api import async_playwright
 from selenium import webdriver
 
+import fetcher.revolut as revolut  # noqa: F401
 import fetcher.tool as t
 from fetcher import op  # noqa: F401
 from fetcher.playwrightutils import (
@@ -22,7 +30,7 @@ D = decimal.Decimal
 
 with open(t.FETCHER_CONFIG_DEFAULT, 'r') as cf:
     config = json.load(cf)
-    revolut_account_numbers = config['revolut_account_numbers']
+    revolut_currencies = config['revolut_currencies']
 
 
 def start_driver():
@@ -60,6 +68,11 @@ async def start_playwright(
     context = await browser.new_context(no_viewport=True)
     p = await context.new_page()
     return (pw, browser, context, p)
+
+
+def start():
+    pw, b, bc, p = ruc(start_playwright())
+    return p
 
 
 async def open_1password_client() -> op.OpSdkClient:

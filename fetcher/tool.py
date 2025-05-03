@@ -362,8 +362,8 @@ def revolut_pull(ctx, download_directory) -> None:
         async with playwrightutils.new_page(
                 browser_type=Browser.FIREFOX,
                 downloads_path=download_directory) as p:
-            await revolut.download_statements(
-                p, download_directory, config['revolut_account_numbers'])
+            await revolut.login_and_download_statements(
+                p, download_directory, config['revolut_currencies'])
 
     asyncio.run(run())
 

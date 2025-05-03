@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
 """Fetches account statements from Revolut."""
 import asyncio
 import pathlib
+import re
 from datetime import date, timedelta
 from typing import NamedTuple
 
 import playwright
 import playwright.async_api
-
-from fetcher.playwrightutils import preserve_new_file
 
 
 async def login(page: playwright.async_api.Page) -> None:
@@ -80,23 +78,20 @@ def monthYearToRevolutLabel(my: MonthYear) -> str:
     return f"{months[my.month]} {my.year}"
 
 
-async def download_statement(page: playwright.async_api.Page,
-                             file_downloaded_event, account_no: str,
-                             from_my: MonthYear):
-    """
-    Downloads a single statement.
-
-    :param page playwright.async_api.Page
-    :param file_downloaded_event: an awaitable that returns when the CSV file
-                                  has been downloaded.
-    :param account_no str
-    :param from_my MonthYear
-    """
-    await page.goto(f'https://app.revolut.com/accounts/{account_no}/statement')
+async def download_statement(page: playwright.async_api.Page, currency: str,
+                             current_year: int, from_my: MonthYear):
+    """Downloads a single statement."""
     await page.get_by_role("tab", name="Excel").click()
+    await page.get_by_role("button", name=re.compile("account")).click()
+    await page.get_by_role("button", name=currency).click()
 
-    await page.locator("//div[normalize-space(text()) = 'Starting on']/.."
-                       ).click()
+    # There an input with "Starting on" "May 2025" text.
+    # To find it, find the most specific div with that.
+    # Searching for just "Starting on" doesn't work, because
+    # there's a div for just that, and it doesn't handle clicks.
+    await (page.locator("div").filter(
+        has_text=re.compile("Starting on")).filter(
+            has_text=re.compile(f"{current_year}")).last.click())
 
     async def get_current_selected_year() -> int | None:
         year_string = await page.locator('div[role="grid"] [role="heading"]'
@@ -108,40 +103,47 @@ async def download_statement(page: playwright.async_api.Page,
     current_selected_year = await get_current_selected_year()
 
     while current_selected_year and current_selected_year > from_my.year:
-        await page.locator('button[aria-label= "Previous"]').click()
+        await page.get_by_role("button", name="Previous").click()
         current_selected_year = await get_current_selected_year()
 
     await page.locator(f'div[aria-label="{monthYearToRevolutLabel(from_my)}"]'
                        ).click()
-    await page.locator("//button/span[normalize-space(text()) = 'Generate']"
-                       ).click()
-    download_task = asyncio.create_task(
-        page.locator("//button[normalize-space(text()) = 'Download']").click())
-    done, pending = await asyncio.wait(
-        [asyncio.shield(file_downloaded_event),
-         asyncio.shield(download_task)],
-        return_when=asyncio.FIRST_COMPLETED)
-    for p in pending:
-        p.cancel()
+    async with page.expect_popup():
+        await page.locator(
+            "//button/span[normalize-space(text()) = 'Generate']").click()
+        # There are two options. Either the statement is auto-downloaded
+        # or it is being generated and we need to press the download button.
+        try:
+            await page.get_by_text("Statement is being generated").click(
+                timeout=2000)
+        except playwright.async_api.TimeoutError:
+            # Proceed as if the file will be auto-downloaded.
+            return None
+        else:
+            await page.get_by_role("button", name="Download").click()
 
 
 async def download_statements(page: playwright.async_api.Page,
                               download_dir: pathlib.Path,
-                              account_nos: list[str]) -> None:
-    """
-    Downloads Revolut's account statements.
+                              currencies: list[str]) -> None:
+    """Downloads Revolut's account statements."""
+    today = date.today()
+    for currency in currencies:
+        async with page.expect_download() as download_info:
+            await download_statement(page,
+                                     currency=currency,
+                                     current_year=today.year,
+                                     from_my=date_to_month_year(
+                                         three_months_ago(today)))
+        download = await download_info.value
+        await download.save_as(download_dir / download.suggested_filename)
 
-    :param page playwright.async_api.Page
-    :param download_dir pathlib.Path
-    :param account_nos list[str]
-    :rtype None
-    """
+
+async def login_and_download_statements(page: playwright.async_api.Page,
+                                        download_dir: pathlib.Path,
+                                        currencies: list[str]) -> None:
+    """Logs in and downloads Revolut's account statements."""
     await login(page)
     await accept_cookies_on_revolut(page)
-    for account_no in account_nos:
-        async with preserve_new_file(download_dir) as file_downloaded_event:
-            await download_statement(page,
-                                     file_downloaded_event,
-                                     account_no,
-                                     from_my=date_to_month_year(
-                                         three_months_ago(date.today())))
+    await page.get_by_role("button", name="Statement").click()
+    await download_statements(page, download_dir, currencies)
