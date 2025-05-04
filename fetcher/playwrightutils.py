@@ -4,7 +4,6 @@ import asyncio
 import contextlib
 import os
 import pathlib
-import shutil
 import typing
 from enum import Enum
 from typing import Optional
@@ -42,34 +41,6 @@ def playwright_cookie_jar_to_requests_cookies(
     :rtype dict
     """
     return {c['name']: c['value'] for c in playwright_cookies}
-
-
-# Using an async context manager, because it's more natural:
-# * The client can now define the timeout using an orthogonal asyncio.timeout
-# * The client can combine it with other concurrent operations without
-#   blocking.
-@contextlib.asynccontextmanager
-async def preserve_new_file(dir: pathlib.Path):
-    """
-    A context manager that preserves files downloaded in a Playwright session.
-
-    Playwright may asynchronously download a file. This context manager watches
-    for this event and copies the file once it happens.
-
-    :param dir pathlib.Path: The downloads directory used by Playwright.
-    """
-    async with get_new_files(dir) as get_new_files_task:
-
-        async def copy_new_files():
-            new_files = await get_new_files_task
-            for nf in new_files:
-                # We need to copy the file, because playwright deletes
-                # downloaded files on browser close.
-                shutil.copy(nf, str(nf) + ".csv")
-
-        copy_new_files_task = asyncio.create_task(copy_new_files())
-        yield copy_new_files_task
-        await copy_new_files_task
 
 
 # Using an async context manager, because it's more natural:
