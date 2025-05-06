@@ -32,17 +32,6 @@ def get_browser_type(
     raise Exception(f"Unknown browser type: {browser_type}")
 
 
-def playwright_cookie_jar_to_requests_cookies(
-        playwright_cookies: list[playwright.async_api.Cookie]) -> dict:
-    """
-    Transforms a cookie jar from Playwright into a Requests-compatible dict.
-
-    :param playwright_cookies list[dict]
-    :rtype dict
-    """
-    return {c['name']: c['value'] for c in playwright_cookies}
-
-
 # Using an async context manager, because it's more natural:
 # * The client can now define the timeout using an orthogonal asyncio.timeout
 # * The client can combine it with other concurrent operations without

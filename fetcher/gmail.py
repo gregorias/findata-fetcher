@@ -4,7 +4,7 @@ import email
 import typing
 from email.header import decode_header
 from imaplib import IMAP4, IMAP4_SSL
-from typing import List, NamedTuple, Tuple
+from typing import NamedTuple, Tuple
 
 from . import op
 
@@ -91,13 +91,6 @@ def connect(creds: Credentials) -> Gmail:
     imap.login(creds.id, creds.pwd)
     imap.select()
     return Gmail(imap)
-
-
-def get_all_inbox_mails(imap: IMAP4) -> List[bytes]:
-    ret = imap.search(None, 'ALL')
-    if ret[0] != 'OK':
-        raise Exception("Could not get all inbox mails.")
-    return ret[1][0].split()
 
 
 def fetch_file(file_part) -> Tuple[str, bytes]:

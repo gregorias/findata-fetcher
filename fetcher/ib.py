@@ -28,7 +28,6 @@ class StatementType(Enum):
     The value corresponds to the statement name on the statements page.
     """
     ACTIVITY = "Activity"
-    MTM = "MTM Summary"
 
 
 async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
