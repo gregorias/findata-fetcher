@@ -126,11 +126,11 @@ def pull_bcgecc() -> None:
     """Fetches BCGE CC data and outputs a PDF."""
 
     async def run():
-        with getFirefoxDriver() as driver:
-            sys.stdout.buffer.write(
-                bcgecc.fetch_data(
-                    await bcgecc.fetch_credentials(await connect_op()),
-                    driver))
+        creds = await bcgecc.fetch_credentials(await connect_op())
+        async with playwrightutils.new_page(Browser.FIREFOX) as p:
+            statement = await bcgecc.login_and_download_latest_statement(
+                p, creds)
+        sys.stdout.buffer.write(statement)
 
     asyncio.run(run())
 

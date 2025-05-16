@@ -1,21 +1,13 @@
-# -*- coding: utf-8 -*-
-# TODO This module is not finished. I haven't prioritized it, because the
-# account's status is linked to BCGE and I'm already handling BCGE, i.e. the
-# data is "eventually consistent" so to say.
-"""Fetches account data from Viseca"""
+"""Fetches the latest account statement from Viseca."""
+import logging
 import re
-import time
 from typing import NamedTuple
 
-import requests
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.support.ui import WebDriverWait
+import playwright.async_api
+
+from fetcher import playwrightutils
 
 from . import op
-from .driverutils import driver_cookie_jar_to_requests_cookies
 
 
 class Credentials(NamedTuple):
@@ -31,70 +23,69 @@ async def fetch_credentials(op_client: op.OpSdkClient) -> Credentials:
     return Credentials(id=username, pwd=password)
 
 
-LOGIN_PAGE = 'https://one.viseca.ch/login/login'
+async def login(page: playwright.async_api.Page, creds: Credentials) -> None:
+    LOGIN_PAGE = 'https://one.viseca.ch/login/login'
+    logging.info("Logging in to Viseca.")
+    await page.goto(LOGIN_PAGE)
+    await page.get_by_role("textbox", name="E-mail address").fill(creds.id)
+    await page.get_by_role("textbox", name="Password").fill(creds.pwd)
+    await page.get_by_role("button", name="Login").click()
+    await page.wait_for_url('https://one.viseca.ch/de/cockpit')
+    logging.info("Logged in to Viseca.")
 
 
-def login(creds: Credentials,
-          driver: webdriver.remote.webdriver.WebDriver) -> None:
-    username_field_name = 'Benutzername'
-    driver.get(LOGIN_PAGE)
-    wait = WebDriverWait(driver, 30)
-    wait.until(
-        expected_conditions.presence_of_element_located(
-            (By.ID, username_field_name)))
-    driver.find_element(By.ID,
-                        username_field_name).send_keys(creds.id + Keys.TAB)
-    time.sleep(1)
-    pwd_field = driver.find_element(By.ID, "Passwort")
-    pwd_field.send_keys(creds.pwd)
-    time.sleep(1)
-    pwd_field.send_keys(Keys.RETURN)
+async def go_to_rechnungen(page: playwright.async_api.Page) -> None:
+    """Goes to the Rechnungen page.
+
+    Assumes we are already logged in and in the cockpit.
+    """
+    await page.get_by_role("link", name="Rechnungen", exact=True).click()
+    await page.wait_for_url('https://one.viseca.ch/de/rechnungen')
+    # Wait till bill items are visible.
+    await page.locator('div.transactions-statistic').wait_for()
 
 
-def wait_for_login(driver: webdriver.remote.webdriver.WebDriver) -> None:
-    wait = WebDriverWait(driver, 30)
-    wait.until(
-        expected_conditions.url_matches('https://one.viseca.ch/de/cockpit'))
+async def get_bill_table_items(
+        page: playwright.async_api.Page) -> list[playwright.async_api.Locator]:
+    """Gets all bill table items.
+
+    Assumes we are on the Rechnungen tab.
+    """
+    return await (page.locator('div.statistic-table').filter(
+        has_text=re.compile('.*Rechnung.*')).filter(
+            has_text=re.compile('.*1107.*')).all())
 
 
-def fetch_latest_bill(driver: webdriver.remote.webdriver.WebDriver) -> bytes:
-    driver.get('https://one.viseca.ch/de/rechnungen')
-    driver.implicitly_wait(30)
-    latest_bill_a_elem = driver.find_element(
-        By.CSS_SELECTOR, '#statement-list-statement-date0 a')
-    latest_bill_a_elem_id = latest_bill_a_elem.get_attribute('id')
-    if not latest_bill_a_elem_id:
-        raise Exception("Could not find the latest bill element's ID.")
-    latest_bill_id = extract_bid(latest_bill_a_elem_id)
-    return fetch_bill(latest_bill_id, driver.get_cookies())
+async def download_bill(
+        page: playwright.async_api.Page,
+        bill_table_item: playwright.async_api.Locator) -> bytes:
+    title = await bill_table_item.locator('.table-header').inner_text()
+    print(f'Downloading a bill for {title}.')
+    async with playwrightutils.intercept_download(page) as download:
+        async with page.expect_popup() as popup_info:
+            await bill_table_item.locator('.table-body').locator('a').filter(
+                has_text=re.compile(".*Rechnung.*")).click()
+        popup = await popup_info.value
+    await popup.close()
+    return download.downloaded_content()
 
 
-def extract_bid(elem_id: str) -> str:
-    m = re.match('statement-list-statement-url(.*)', elem_id)
-    if not m:
-        raise Exception("Could not extract the bill id from " + elem_id)
-    return m[1]
+async def find_and_download_latest_statement(
+        page: playwright.async_api.Page) -> bytes:
+    await go_to_rechnungen(page)
+    bill_table_items = await get_bill_table_items(page)
+    if not bill_table_items:
+        raise Exception("No bill items found on the Rechnungen tab.")
+    latest_bill_table_item = bill_table_items[0]
+    return await download_bill(page, latest_bill_table_item)
 
 
-def fetch_bill(bill_id: str, cookies) -> bytes:
-    fetch_page = ('https://api.one.viseca.ch/v1/statement/' + bill_id +
-                  '/document')
-    response = requests.get(
-        fetch_page, cookies=driver_cookie_jar_to_requests_cookies(cookies))
-    if not response.ok:
-        raise Exception("The statement fetch request has failed. " +
-                        ('Response reason: {0}, parameters: {1}'
-                         ).format(response.reason, (fetch_page, cookies)))
-    return response.content
-
-
-def fetch_data(creds: Credentials,
-               driver: webdriver.remote.webdriver.WebDriver) -> bytes:
-    """Fetches Viseca's transaction data using Selenium
+async def login_and_download_latest_statement(page: playwright.async_api.Page,
+                                              creds: Credentials) -> bytes:
+    """Fetches Viseca's transaction data using Playwright.
 
     Returns:
-        A PDF bytestream representing the latest statement.
+        PDF bytes representing the latest statement.
     """
-    login(creds, driver)
-    wait_for_login(driver)
-    return fetch_latest_bill(driver)
+    await login(page, creds)
+    return await find_and_download_latest_statement(page)

@@ -21,6 +21,7 @@ import playwright.async_api
 from playwright.async_api import async_playwright
 from selenium import webdriver
 
+import fetcher.bcgecc as bcgecc  # noqa: F401
 import fetcher.revolut as revolut  # noqa: F401
 import fetcher.tool as t
 from fetcher import op  # noqa: F401
