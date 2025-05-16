@@ -4,7 +4,9 @@
 #
 # Example session:
 #
-# >>> pw, b, bc, p = ruc(start_playwright())
+# >>> p = start()
+# >>> op = ruc(connect_op())
+# >>> bcge_creds = ruc(fetcher.bcgecc.fetch_credentials(op))
 # >>> import fetcher.revolut as r
 # >>> ruc(r.login(p))
 import asyncio
@@ -15,6 +17,7 @@ import pathlib
 import re  # noqa: F401
 
 import playwright
+import playwright.async_api
 from playwright.async_api import async_playwright
 from selenium import webdriver
 
@@ -25,6 +28,7 @@ from fetcher.playwrightutils import (
     Browser,
     get_browser_type,
 )
+from fetcher.tool import connect_op  # noqa: F401
 
 D = decimal.Decimal
 
