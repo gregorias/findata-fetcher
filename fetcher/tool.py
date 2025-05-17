@@ -1,5 +1,5 @@
 """
-Fetch my accounting data into a CSV file.
+Fetch my accounting data from various sources.
 
 Usage: python -m fetcher.tool --help
 """
@@ -11,18 +11,12 @@ import decimal
 import json
 import logging
 import os
-import shutil
 import sys
-import tempfile
 import typing
-from contextlib import contextmanager
-from os import path
 from pathlib import Path, PurePath
 
 import click
 from playwright.async_api import async_playwright
-from selenium import webdriver  # type: ignore
-from selenium.webdriver.firefox.service import Service as FirefoxService  # type: ignore
 
 from . import (
     bcge,
@@ -48,27 +42,6 @@ from .playwrightutils import Browser
 pw = async_playwright
 
 LOGGING_FILE_CFG_KEY = 'logging_file'
-
-
-def getFirefoxDriver(logging=False) -> webdriver.Firefox:
-    if logging:
-        return webdriver.Firefox()
-    else:
-        service = FirefoxService(log_path=path.devnull)
-        return webdriver.Firefox(service=service)
-
-
-@contextmanager
-def open_and_save_on_success(file, mode):
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, mode=mode) as f:
-            yield f
-            fn = f.name
-    except:
-        raise
-    else:
-        shutil.move(fn, file)
-
 
 XDG_CONFIG_HOME = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser(
     '~/.config')
@@ -332,17 +305,11 @@ def pull_mbank() -> None:
 
     async def run():
         creds = await mbank.fetch_credentials(await connect_op())
-        with getFirefoxDriver() as driver:
-            sys.stdout.buffer.write(mbank.fetch_mbank_data(driver, creds))
+        async with playwrightutils.new_page(Browser.FIREFOX) as p:
+            statement = await mbank.login_and_fetch_history(p, creds)
+        sys.stdout.buffer.write(statement)
 
     asyncio.run(run())
-
-
-def pull_mbank_helper(driver: webdriver.remote.webdriver.WebDriver,
-                      download_directory: PurePath,
-                      creds: mbank.Credentials) -> None:
-    with open_and_save_on_success(download_directory / 'mbank.csv', 'wb') as f:
-        f.write(mbank.fetch_mbank_data(driver, creds))
 
 
 @cli.command()

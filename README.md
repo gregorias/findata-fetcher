@@ -21,16 +21,18 @@ Currently implemented fetchers are:
 
 ## Installation
 
-1. [Install Selenium Webdriver
-   (geckodriver)](https://www.selenium.dev/documentation/en/selenium_installation/installing_webdriver_binaries/)
-2. You have two choices for installation. I recommend using pipx, which will
-   install the app in a standalone environment:
+You have two choices for installation. I recommend using Pipx, which will
+install the app in a standalone environment:
 
-    pipx install .
+```bash
+pipx install .
+```
 
-   alternatively, you may just go with pip:
+alternatively, you may just go with Pip:
 
-    pip install --editable .
+```bash
+pip install --editable .
+```
 
 ### Shell completion
 
@@ -40,7 +42,9 @@ instructions](https://click.palletsprojects.com/en/8.1.x/shell-completion/#enabl
 
 ## Usage example
 
-    pipenv shell # If not already using pipenv
-    python -m fetcher.tool --help
+```bash
+pipenv shell # If not already using pipenv
+python -m fetcher.tool --help
+```
 
 [click]: https://click.palletsprojects.com/en/8.1.x/

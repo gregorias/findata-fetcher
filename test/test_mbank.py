@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-import datetime
-from os import path
 import pathlib
 import unittest
+from os import path
 
 from fetcher import mbank
 
@@ -19,43 +17,6 @@ def read_file(p: pathlib.Path, mode) -> str:
 
 
 class MbankTestCase(unittest.TestCase):
-
-    def test_gives_download_payload(self):
-        from_date = datetime.date(2020, 11, 5)
-        to_date = datetime.date(2020, 11, 6)
-        expected_payload = {
-            "saveFileType": "CSV",
-            "pfmFilters": {
-                "productIds": "399116",
-                "amountFrom": None,
-                "amountTo": None,
-                "useAbsoluteSearch": False,
-                "currency": "",
-                "categories": "",
-                "operationTypes": "",
-                "searchText": "",
-                "dateFrom": mbank.format_date(from_date),
-                "dateTo": mbank.format_date(to_date),
-                "standingOrderId": "",
-                "showDebitTransactionTypes": False,
-                "showCreditTransactionTypes": False,
-                "showIrrelevantTransactions": True,
-                "showSavingsAndInvestments": True,
-                "saveShowIrrelevantTransactions": False,
-                "saveShowSavingsAndInvestments": False,
-                "selectedSuggestionId": "",
-                "selectedSuggestionType": "",
-                "showUncategorizedTransactions": False,
-                "debitCardNumber": "",
-                "showBalance": True,
-                "counterpartyAccountNumbers": "",
-                "sortingOrder": "ByDate",
-                "tags": []
-            }
-        }
-        self.assertEqual(
-            mbank.download_request_json_payload(from_date, to_date),
-            expected_payload)
 
     def test_preprocesses_mbanks_csv_0(self):
         raw_csv = (

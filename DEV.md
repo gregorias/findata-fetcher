@@ -49,10 +49,7 @@ I need to use a browser automation technology, and I decided to use Playwright:
 - Playwright comes with a code generator tool.
 - I found that Playwright comes with more relevant functionality, e.g.,
   capturing downloads.
-
-> [!note]
-> I still use Selenium in some fetchers. It’s legacy code to be removed
-> whenever I have to change those fetchers.
+- Playwright’s async support makes code more readable and easier to work with.
 
 ### Use 1Password SDK in favor of 1Password CLI
 

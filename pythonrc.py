@@ -19,7 +19,6 @@ import re  # noqa: F401
 import playwright
 import playwright.async_api
 from playwright.async_api import async_playwright
-from selenium import webdriver
 
 import fetcher.bcgecc as bcgecc  # noqa: F401
 import fetcher.revolut as revolut  # noqa: F401
@@ -36,13 +35,6 @@ D = decimal.Decimal
 with open(t.FETCHER_CONFIG_DEFAULT, 'r') as cf:
     config = json.load(cf)
     revolut_currencies = config['revolut_currencies']
-
-
-def start_driver():
-    driver = webdriver.Firefox()
-    driver.implicitly_wait(20)
-    return driver
-
 
 loop = asyncio.new_event_loop()
 atexit.register(loop.close)
