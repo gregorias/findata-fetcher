@@ -5,6 +5,9 @@ pre-commit:
       files: git diff --name-only --cached --diff-filter=AM
       glob: "*.md"
       run: markdownlint {files}
+    mypy:
+      tags: test
+      run: just mypy
     pyproject-toml-check:
       tags: lint
       glob: "pyproject.toml"
@@ -32,7 +35,7 @@ pre-commit:
       run: taplo fmt --check {staged_files}
     unit-tests:
       tags: test
-      run: "./dev/bin/testall"
+      run: just unittest
     uv-check:
       tags: lint
       glob: "{pyproject.toml,uv.lock}"

@@ -37,6 +37,7 @@ dev = [
   "packaging",
   "rope",
   "validate-pyproject>=0.24.1",
+  "coverage>=7.8.0",
 ]
 
 [tool.uv]
