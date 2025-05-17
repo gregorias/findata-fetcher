@@ -54,13 +54,13 @@ class OpSdkClient():
             f"op://{vault}/{item}/{field}")
 
     async def get_vault_id(self, vault_name: str) -> str | None:
-        async for vault in await self._op_sdk_client.vaults.list_all():
+        async for vault in await self._op_sdk_client.vaults.list():
             if vault.title == vault_name:
                 return vault.id
         return None
 
     async def get_item_id(self, vault_id, item_name: str) -> str | None:
-        async for item in await self._op_sdk_client.items.list_all(vault_id):
+        async for item in await self._op_sdk_client.items.list(vault_id):
             if item.title == item_name:
                 return item.id
         return None
