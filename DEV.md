@@ -42,6 +42,15 @@ To run tests and check for coverage, use `coverage`.
 
 ## ADRs
 
+### Entity-action naming
+
+I name all Click *commands* starting with an *entity*, e.g., “BCGE,” followed by
+the *action*, e.g., “fetch.”
+
+There are plenty of *commands* that do not follow this naming scheme.
+That’s OK, they are legacy commands. I don’t think it’s worth the effort
+to update them.
+
 ### Use Playwright in favor of Selenium
 
 I need to use a browser automation technology, and I decided to use Playwright:
