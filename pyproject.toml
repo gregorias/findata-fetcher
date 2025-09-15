@@ -1,6 +1,6 @@
 [project]
 name = "findata-fetcher"
-version = "12.2.0"
+version = "12.2.1"
 description = "A tool that downloads financial statements from various sites."
 authors = [{ name = "Grzegorz Milka", email = "grzegorzmilka@gmail.com" }]
 requires-python = ">=3.13.7"
