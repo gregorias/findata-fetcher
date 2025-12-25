@@ -21,7 +21,7 @@ Also install [direnv](https://direnv.net/) to benefit from some dev tools.
 To update locked dependencies, run
 
 ```shell
-poetry update
+uv sync
 ```
 
 From time to time, check if the major versions of dependencies in
