@@ -137,7 +137,7 @@ wheels = [
 
 [[package]]
 name = "findata-fetcher"
-version = "12.2.2"
+version = "12.2.3"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },

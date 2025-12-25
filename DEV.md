@@ -8,13 +8,6 @@ with the repository.
 This project requires [Lefthook](https://github.com/evilmartians/lefthook) and
 [Commitlint](https://github.com/conventional-changelog/commitlint).
 
-Set up Uv
-
-```bash
-uv init
-uv venv
-```
-
 Install lefthook:
 
 ```bash
