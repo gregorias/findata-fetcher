@@ -41,40 +41,39 @@ from .playwrightutils import Browser
 
 pw = async_playwright
 
-LOGGING_FILE_CFG_KEY = 'logging_file'
+LOGGING_FILE_CFG_KEY = "logging_file"
 
-XDG_CONFIG_HOME = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser(
-    '~/.config')
-FETCHER_CONFIG_DEFAULT: str = os.path.join(XDG_CONFIG_HOME, 'findata',
-                                           'fetcher.json')
+XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+FETCHER_CONFIG_DEFAULT: str = os.path.join(XDG_CONFIG_HOME, "findata", "fetcher.json")
 
 
 @click.group()
-@click.option('--config_file',
-              default=FETCHER_CONFIG_DEFAULT,
-              type=click.File(mode='r'),
-              help='The file containing the program\'s config ' +
-              '(default: $XDG_CONFIG_HOME/findata/fetcher.json).')
-@click.option('--logtostderr/--no-logtostderr',
-              default=False,
-              help='Whether to log to STDERR.')
+@click.option(
+    "--config_file",
+    default=FETCHER_CONFIG_DEFAULT,
+    type=click.File(mode="r"),
+    help="The file containing the program's config "
+    + "(default: $XDG_CONFIG_HOME/findata/fetcher.json).",
+)
+@click.option(
+    "--logtostderr/--no-logtostderr", default=False, help="Whether to log to STDERR."
+)
 @click.pass_context
 def cli(ctx, config_file: typing.TextIO, logtostderr: bool):
     config = json.load(config_file)
     assert isinstance(config, dict)
 
-    ctx.obj['config'] = config
+    ctx.obj["config"] = config
 
     if config[LOGGING_FILE_CFG_KEY]:
-        logging.basicConfig(filename=config[LOGGING_FILE_CFG_KEY],
-                            level=logging.DEBUG)
+        logging.basicConfig(filename=config[LOGGING_FILE_CFG_KEY], level=logging.DEBUG)
     stderr = logging.StreamHandler()
     stderr.setLevel(logging.INFO if logtostderr else logging.WARNING)
-    logging.getLogger('').addHandler(stderr)
+    logging.getLogger("").addHandler(stderr)
 
 
 def read_config_from_context(ctx):
-    return ctx.obj['config']
+    return ctx.obj["config"]
 
 
 @cli.command()
@@ -82,12 +81,13 @@ def read_config_from_context(ctx):
 def pull_bcge(ctx) -> None:
     """Fetches BCGE data and outputs a CSV file."""
     config = read_config_from_context(ctx)
-    download_directory = PurePath(config['download_directory'])
+    download_directory = PurePath(config["download_directory"])
 
     async def run():
         credentials = await bcge.fetch_credentials(await connect_op())
         async with playwrightutils.new_page(
-                Browser.CHROMIUM, downloads_path=download_directory) as p:
+            Browser.CHROMIUM, downloads_path=download_directory
+        ) as p:
             statement = await bcge.fetch_account_statement(p, credentials)
         sys.stdout.buffer.write(statement)
 
@@ -101,8 +101,7 @@ def pull_bcgecc() -> None:
     async def run():
         creds = await bcgecc.fetch_credentials(await connect_op())
         async with playwrightutils.new_page(Browser.FIREFOX) as p:
-            statement = await bcgecc.login_and_download_latest_statement(
-                p, creds)
+            statement = await bcgecc.login_and_download_latest_statement(p, creds)
         sys.stdout.buffer.write(statement)
 
     asyncio.run(run())
@@ -123,10 +122,9 @@ def coop_supercard_pull() -> None:
 
 @cli.command()
 @click.pass_context
-@click.option('--amount', required=True)
-@click.argument('wire_instructions_csv', type=click.File('r'))
-def cs_send_wire_to_ib(ctx, amount: str,
-                       wire_instructions_csv: typing.TextIO) -> None:
+@click.option("--amount", required=True)
+@click.argument("wire_instructions_csv", type=click.File("r"))
+def cs_send_wire_to_ib(ctx, amount: str, wire_instructions_csv: typing.TextIO) -> None:
     """Sends a wire transfer to Interactive Brokers.
 
     Example use:
@@ -151,8 +149,7 @@ def degiro_portfolio_pull() -> None:
 async def degiro_pull(statement_type: degiro.StatementType) -> None:
     op_client = await connect_op()
     creds = await degiro.fetch_credentials(op_client)
-    async with playwrightutils.new_page(Browser.FIREFOX,
-                                        headless=False) as page:
+    async with playwrightutils.new_page(Browser.FIREFOX, headless=False) as page:
         await degiro.login(page, creds, op_client)
         statement = await degiro.fetch_statement(page, statement_type)
 
@@ -163,12 +160,12 @@ async def degiro_pull(statement_type: degiro.StatementType) -> None:
 @click.pass_context
 def pull_easyride_receipts(ctx) -> None:
     """Fetches EasyRide receipt PDFs."""
-    config = ctx.obj['config']
+    config = ctx.obj["config"]
 
     async def run():
         easyride.fetch_and_archive_receipts(
             await gmail.fetch_credentials(await connect_op()),
-            PurePath(config['download_directory']),
+            PurePath(config["download_directory"]),
         )
 
     asyncio.run(run())
@@ -185,7 +182,8 @@ def pull_finpension() -> None:
             browser = await pw.firefox.launch(headless=False)
             page = await browser.new_page()
             await finpension.login(
-                page, await finpension.fetch_credentials(await connect_op()))
+                page, await finpension.fetch_credentials(await connect_op())
+            )
             value = await finpension.fetch_current_total(page)
             print(value)
 
@@ -201,7 +199,7 @@ def decode_ib_wire_instructions(csvf: typing.TextIO) -> dict[str, str]:
     """
     result = dict()
     for row in csv.DictReader(csvf):
-        result[row['key']] = row['value']
+        result[row["key"]] = row["value"]
     return result
 
 
@@ -218,8 +216,7 @@ def ib_cancel_pending_deposits() -> None:
 
     async def run():
         credentials = await ib.fetch_credentials(await connect_op())
-        async with playwrightutils.new_page(Browser.FIREFOX,
-                                            headless=False) as page:
+        async with playwrightutils.new_page(Browser.FIREFOX, headless=False) as page:
             await ib.login(page, credentials)
             await ib.cancel_pending_deposits(page)
 
@@ -232,27 +229,25 @@ def ib_activity_pull() -> None:
 
     Outputs the statement CSV to stdout.
     """
-    downloads_path = Path('/tmp')
+    downloads_path = Path("/tmp")
 
     async def run():
         credentials = await ib.fetch_credentials(await connect_op())
         async with playwrightutils.new_page(
-                Browser.FIREFOX, headless=False,
-                downloads_path=downloads_path) as page:
+            Browser.FIREFOX, headless=False, downloads_path=downloads_path
+        ) as page:
             await ib.login(page, credentials)
-            statement = await ib.fetch_statement(page,
-                                                 ib.StatementType.ACTIVITY,
-                                                 Path('/tmp'))
+            statement = await ib.fetch_statement(page, ib.StatementType.ACTIVITY)
             sys.stdout.buffer.write(statement)
 
     asyncio.run(run())
 
 
 @cli.command()
-@click.option('--source',
-              required=True,
-              type=click.Choice(['CS', 'BCGE'], case_sensitive=False))
-@click.option('--amount', required=True)
+@click.option(
+    "--source", required=True, type=click.Choice(["CS", "BCGE"], case_sensitive=False)
+)
+@click.option("--amount", required=True)
 def ib_set_up_incoming_deposit(source, amount) -> None:
     """Sets up an incoming deposit on Interactive Brokers.
 
@@ -262,41 +257,47 @@ def ib_set_up_incoming_deposit(source, amount) -> None:
 
         ib-set-up-incoming-deposit --source=cs --amount=21.37
     """
-    ib_source: ib.DepositSource = (ib.DepositSource.BCGE if source == 'BCGE'
-                                   else ib.DepositSource.CHARLES_SCHWAB)
+    ib_source: ib.DepositSource = (
+        ib.DepositSource.BCGE if source == "BCGE" else ib.DepositSource.CHARLES_SCHWAB
+    )
 
     async def run() -> ib.SourceBankDepositInformation:
-        credentials: ib.Credentials = await ib.fetch_credentials(await
-                                                                 connect_op())
-        async with playwrightutils.new_page(Browser.FIREFOX,
-                                            headless=False) as page:
+        credentials: ib.Credentials = await ib.fetch_credentials(await connect_op())
+        async with playwrightutils.new_page(Browser.FIREFOX, headless=False) as page:
             await ib.login(page, credentials)
-            instructions: ib.SourceBankDepositInformation = (await ib.deposit(
-                page, ib_source, decimal.Decimal(amount)))
+            instructions: ib.SourceBankDepositInformation = await ib.deposit(
+                page, ib_source, decimal.Decimal(amount)
+            )
             return instructions
 
     instructions = asyncio.run(run())
 
-    writer = csv.DictWriter(sys.stdout,
-                            fieldnames=["key", "value"],
-                            delimiter=',')
+    writer = csv.DictWriter(sys.stdout, fieldnames=["key", "value"], delimiter=",")
     writer.writeheader()
-    writer.writerow({
-        'key': 'transfer_to',
-        'value': instructions.transfer_to,
-    })
-    writer.writerow({
-        'key': 'iban',
-        'value': instructions.iban,
-    })
-    writer.writerow({
-        'key': 'beneficiary_bank',
-        'value': instructions.beneficiary_bank,
-    })
-    writer.writerow({
-        'key': 'for_further_credit',
-        'value': instructions.for_further_credit,
-    })
+    writer.writerow(
+        {
+            "key": "transfer_to",
+            "value": instructions.transfer_to,
+        }
+    )
+    writer.writerow(
+        {
+            "key": "iban",
+            "value": instructions.iban,
+        }
+    )
+    writer.writerow(
+        {
+            "key": "beneficiary_bank",
+            "value": instructions.beneficiary_bank,
+        }
+    )
+    writer.writerow(
+        {
+            "key": "for_further_credit",
+            "value": instructions.for_further_credit,
+        }
+    )
 
 
 @cli.command()
@@ -314,9 +315,9 @@ def pull_mbank() -> None:
 
 @cli.command()
 @click.option(
-    '--download-directory',
+    "--download-directory",
     required=True,
-    help='The target download directory.',
+    help="The target download directory.",
     type=click.Path(exists=True, file_okay=False, writable=True),
 )
 @click.pass_context
@@ -327,10 +328,11 @@ def revolut_pull(ctx, download_directory) -> None:
 
     async def run():
         async with playwrightutils.new_page(
-                browser_type=Browser.FIREFOX,
-                downloads_path=download_directory) as p:
+            browser_type=Browser.FIREFOX, downloads_path=download_directory
+        ) as p:
             await revolut.login_and_download_statements(
-                p, download_directory, config['revolut_currencies'])
+                p, download_directory, config["revolut_currencies"]
+            )
 
     asyncio.run(run())
 
@@ -351,17 +353,15 @@ def pull_splitwise() -> None:
 @click.pass_context
 def pull_galaxus(ctx) -> None:
     """Fetches Digitec-Galaxus receipts in text format."""
-    config = ctx.obj['config']
-    download_directory = PurePath(config['download_directory'])
+    config = ctx.obj["config"]
+    download_directory = PurePath(config["download_directory"])
 
     async def run():
         with contextlib.closing(
-                gmail.connect(await
-                              gmail.fetch_credentials(await
-                                                      connect_op()))) as inbox:
+            gmail.connect(await gmail.fetch_credentials(await connect_op()))
+        ) as inbox:
             for bill in galaxus.fetch_and_archive_bills(inbox):
-                with open(download_directory / (bill.subject + '.galaxus'),
-                          'w') as f:
+                with open(download_directory / (bill.subject + ".galaxus"), "w") as f:
                     f.write(bill.payload)
 
     asyncio.run(run())
@@ -371,17 +371,15 @@ def pull_galaxus(ctx) -> None:
 @click.pass_context
 def pull_google_play_mail(ctx) -> None:
     """Fetches Google Play receipts in text format."""
-    config = ctx.obj['config']
-    download_directory = PurePath(config['download_directory'])
+    config = ctx.obj["config"]
+    download_directory = PurePath(config["download_directory"])
 
     async def run():
         with contextlib.closing(
-                gmail.connect(await
-                              gmail.fetch_credentials(await
-                                                      connect_op()))) as inbox:
+            gmail.connect(await gmail.fetch_credentials(await connect_op()))
+        ) as inbox:
             for bill in google_play_mail.fetch_and_archive_bills(inbox):
-                with open(download_directory / (bill.subject + '.email'),
-                          'w') as f:
+                with open(download_directory / (bill.subject + ".email"), "w") as f:
                     f.write(bill.payload)
 
     asyncio.run(run())
@@ -391,12 +389,12 @@ def pull_google_play_mail(ctx) -> None:
 @click.pass_context
 def pull_patreon(ctx) -> None:
     """Fetches Patreon receipts in text format."""
-    config = ctx.obj['config']
+    config = ctx.obj["config"]
 
     async def run():
         patreon.fetch_and_archive_receipts(
             await gmail.fetch_credentials(await connect_op()),
-            PurePath(config['download_directory']),
+            PurePath(config["download_directory"]),
         )
 
     asyncio.run(run())
@@ -406,13 +404,14 @@ def pull_patreon(ctx) -> None:
 @click.pass_context
 def pull_uber_eats(ctx) -> None:
     """Fetches Uber Eats receipts in text format."""
-    config = ctx.obj['config']
-    download_dir = PurePath(config['download_directory'])
+    config = ctx.obj["config"]
+    download_dir = PurePath(config["download_directory"])
 
     async def run():
-        for (title, content) in ubereats.fetch_and_archive_bills(
-                await gmail.fetch_credentials(await connect_op())):
-            with open(download_dir / (title + '.ubereats'), 'w') as f:
+        for title, content in ubereats.fetch_and_archive_bills(
+            await gmail.fetch_credentials(await connect_op())
+        ):
+            with open(download_dir / (title + ".ubereats"), "w") as f:
                 f.write(content)
 
     asyncio.run(run())
@@ -421,12 +420,13 @@ def pull_uber_eats(ctx) -> None:
 async def connect_op() -> op.OpSdkClient:
     op_service_account_auth_token = op.fetch_service_account_auth_token()
     return await op.OpSdkClient.connect(
-        service_account_auth_token=op_service_account_auth_token)
+        service_account_auth_token=op_service_account_auth_token
+    )
 
 
 def main():
     cli(obj={})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

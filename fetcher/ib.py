@@ -1,7 +1,7 @@
 """An interface for Interactive Brokers."""
+
 import datetime
 import logging
-import pathlib
 import re
 from decimal import Decimal
 from enum import Enum
@@ -10,11 +10,11 @@ from typing import NamedTuple
 import playwright.async_api
 
 from . import op
-from .playwrightutils import get_new_files
+from .playwrightutils import intercept_download
 
-logger = logging.getLogger('fetcher.ib')
+logger = logging.getLogger("fetcher.ib")
 
-IB_DOMAIN = 'https://www.interactivebrokers.co.uk'
+IB_DOMAIN = "https://www.interactivebrokers.co.uk"
 
 
 class Credentials(NamedTuple):
@@ -27,6 +27,7 @@ class StatementType(Enum):
 
     The value corresponds to the statement name on the statements page.
     """
+
     ACTIVITY = "Activity"
 
 
@@ -61,6 +62,7 @@ class DepositSource(Enum):
 
     The value is the IB method name of the source.
     """
+
     CHARLES_SCHWAB = "Charles Schwab"
     BCGE = "Wire-BCGE"
 
@@ -72,8 +74,9 @@ class SourceBankDepositInformation(NamedTuple):
     for_further_credit: str
 
 
-async def deposit(page: playwright.async_api.Page, source: DepositSource,
-                  amount: Decimal) -> SourceBankDepositInformation:
+async def deposit(
+    page: playwright.async_api.Page, source: DepositSource, amount: Decimal
+) -> SourceBankDepositInformation:
     """Initiates a deposit.
 
     :param page playwright.async_api.Page: A page in a logged in state.
@@ -82,22 +85,27 @@ async def deposit(page: playwright.async_api.Page, source: DepositSource,
     :rtype None
     """
     assert amount > 0, f"Must deposit a positive amount, got f{amount}."
-    await page.goto(IB_DOMAIN + '/AccountManagement/AmAuthentication' +
-                    '?action=FUND_TRANSFERS&type=DEPOSIT')
+    await page.goto(
+        IB_DOMAIN
+        + "/AccountManagement/AmAuthentication"
+        + "?action=FUND_TRANSFERS&type=DEPOSIT"
+    )
     await page.get_by_role("heading", name=source.value).click()
     await page.get_by_placeholder("Required").click()
     await page.keyboard.type(str(amount))
     await page.get_by_role("link", name="Get Transfer Instructions").click()
 
     # Wait for the instructions to appear.
-    await page.get_by_text("Provide the following information" +
-                           " to your bank to initiate the transfer.").click()
+    await page.get_by_text(
+        "Provide the following information" + " to your bank to initiate the transfer."
+    ).click()
 
     #  await page.get_by_text("Transfer Funds to Beneficiary/Account Title"
     #                         ).click()
     async def extract_data_from_row(
-            row: playwright.async_api.Locator) -> tuple[str, str]:
-        labels = await row.locator('label').all()
+        row: playwright.async_api.Locator,
+    ) -> tuple[str, str]:
+        labels = await row.locator("label").all()
         tmp = []
         for label in labels:
             text_content = await label.text_content()
@@ -108,27 +116,29 @@ async def deposit(page: playwright.async_api.Page, source: DepositSource,
 
     deposit_information_dict = {}
 
-    all_rows = await page.locator("wire-destination wire-destination-bank .row"
-                                  ).all()
+    all_rows = await page.locator("wire-destination wire-destination-bank .row").all()
     for row in all_rows:
         data_tuple = await extract_data_from_row(row)
         deposit_information_dict[data_tuple[0]] = data_tuple[1]
 
     for_further_benefit_row = page.locator(
-        "wire-destination" + " destination-further-benefit-to .row").first
-    for_further_benefit_tuple = await extract_data_from_row(
-        for_further_benefit_row)
-    deposit_information_dict[
-        for_further_benefit_tuple[0]] = for_further_benefit_tuple[1]
+        "wire-destination" + " destination-further-benefit-to .row"
+    ).first
+    for_further_benefit_tuple = await extract_data_from_row(for_further_benefit_row)
+    deposit_information_dict[for_further_benefit_tuple[0]] = for_further_benefit_tuple[
+        1
+    ]
 
     return SourceBankDepositInformation(
         transfer_to=deposit_information_dict[
-            "Transfer Funds to Beneficiary/Account Title"],
-        iban=deposit_information_dict[
-            "International Bank Account Number (IBAN)"],
+            "Transfer Funds to Beneficiary/Account Title"
+        ],
+        iban=deposit_information_dict["International Bank Account Number (IBAN)"],
         beneficiary_bank=deposit_information_dict["Beneficiary Bank"],
         for_further_credit=deposit_information_dict[
-            "Payment Reference/For Further Credit to"])
+            "Payment Reference/For Further Credit to"
+        ],
+    )
 
 
 async def cancel_pending_deposits(page: playwright.async_api.Page) -> None:
@@ -138,20 +148,24 @@ async def cancel_pending_deposits(page: playwright.async_api.Page) -> None:
     :param page playwright.async_api.Page: A page in a logged in state.
     :return: None
     """
-    await page.goto(IB_DOMAIN + '/AccountManagement/AmAuthentication' +
-                    '?action=TransactionHistory')
+    await page.goto(
+        IB_DOMAIN + "/AccountManagement/AmAuthentication" + "?action=TransactionHistory"
+    )
     # Wait for the list of transfers to load.
     await page.get_by_role(
-        "row", name=re.compile(".*Deposit.*Bank Transfer.*")).first.focus()
+        "row", name=re.compile(".*Deposit.*Bank Transfer.*")
+    ).first.focus()
     pending_deposits = await page.get_by_role(
-        "row", name=re.compile(".*Deposit.*Pending.*")).all()
+        "row", name=re.compile(".*Deposit.*Pending.*")
+    ).all()
     for pending_deposit in pending_deposits:
         await pending_deposit.click()
         await page.get_by_role("link", name="Cancel Request").click()
         await page.get_by_role("link", name="Yes").click()
         # Wait for the cancellation to finish.
         await page.get_by_role(
-            "heading", name='Your Deposit request has been cancelled').focus()
+            "heading", name="Your Deposit request has been cancelled"
+        ).focus()
         await page.get_by_role("button", name="Close").click()
 
 
@@ -159,40 +173,35 @@ def quarter_ago(day: datetime.date) -> datetime.date:
     return day - datetime.timedelta(days=90)
 
 
-async def fetch_statement(page: playwright.async_api.Page,
-                          statement_type: StatementType,
-                          download_dir: pathlib.Path) -> bytes:
+async def fetch_statement(
+    page: playwright.async_api.Page, statement_type: StatementType
+) -> bytes:
     """Fetches Interactive Brokers's account statement.
 
     :param page playwright.async_api.Page: A page in a logged in state.
     :return bytes: The statement CSV file.
     """
     logger.info("Visiting the statements page.")
-    await page.goto(IB_DOMAIN + '/AccountManagement/AmAuthentication' +
-                    '?action=Statements')
+    await page.goto(
+        IB_DOMAIN + "/AccountManagement/AmAuthentication" + "?action=Statements"
+    )
     # Click the right
-    await page.locator("section.panel").filter(
-        has_text="Default Statements"
-    ).locator(".row").filter(has_text=statement_type.value
-                             ).last.locator("a.btn-icon").filter(
-                                 has=page.locator("i.fa-circle-arrow-right")
-                             ).click()
+    await page.locator("section.panel").filter(has_text="Default Statements").locator(
+        ".row"
+    ).filter(has_text=statement_type.value).last.locator("a.btn-icon").filter(
+        has=page.locator("i.fa-circle-arrow-right")
+    ).click()
     await page.locator("div.row", has_text="Period").last.get_by_role(
-        'combobox').select_option("string:DATE_RANGE")
+        "combobox"
+    ).select_option("string:DATE_RANGE")
 
     today = datetime.date.today()
     quarter_ago_str = quarter_ago(today).strftime("%Y-%m-%d")
     for _ in range(2):
         # For some reason, doing it only once doesn't work.
-        await page.locator("input[name=\"fromDate\"]").fill(quarter_ago_str)
+        await page.locator('input[name="fromDate"]').fill(quarter_ago_str)
         await page.keyboard.press("Enter")
 
-    async with get_new_files(download_dir) as files_downloaded_event:
-        await (page.locator(".row", has_text='CSV').last.locator(
-            "a", has_text="Download").first.click())
-        await files_downloaded_event
-
-    for statement_filename in await files_downloaded_event:
-        with open(statement_filename, 'rb') as f:
-            return f.read()
-    raise Exception("Expected to download a statement but didn't.")
+    async with intercept_download(page) as download:
+        await page.get_by_role("button", name="Download CSV").click()
+    return download.downloaded_content()
