@@ -1,3 +1,6 @@
+bump:
+  ./dev/bin/bump
+
 coverage:
   uv run coverage run --source='fetcher/' --branch -m unittest discover -s test/ -t . && \
   uv run coverage html
